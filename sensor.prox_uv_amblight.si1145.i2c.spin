@@ -50,6 +50,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
                 time.MSleep (1)
                 if i2c.present (SLAVE_WR)                       'Response from device?
                     if lookdown(PartID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
+                        HWKey
                         return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -57,6 +58,11 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
 PUB Stop
 ' Put any other housekeeping code here required/recommended by your device before shutting down
     i2c.terminate
+
+PUB HWKey
+' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
+    result := core#HW_KEY_EXPECTED
+    writeReg (core#HW_KEY, 1, @result)
 
 PUB PartID
 ' Part ID of sensor
@@ -125,6 +131,7 @@ PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
         $00, $03, $04, $07, $10, $13..$18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
+
             i2c.start
             i2c.wr_block (@cmd_packet, 2)
             repeat tmp from 0 to nr_bytes-1

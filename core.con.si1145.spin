@@ -35,6 +35,8 @@ CON
         FLD_PS3_IE              = 4
 
     HW_KEY                      = $07
+        HW_KEY_EXPECTED         = $17
+
     MEAS_RATE0                  = $08
     MEAS_RATE1                  = $09
     PS_LED21                    = $0F
