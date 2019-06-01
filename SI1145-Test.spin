@@ -28,16 +28,23 @@ VAR
 
     byte _ser_cog, _si_cog
 
-PUB Main
+PUB Main | tmp
 
     Setup
 
-    repeat
-        ser.Position (0, 5)
-        ser.Hex (si.VisibleLight, 8)
-        ser.Position (0, 6)
-        ser.Hex (si.IRLight, 8)
-        time.MSleep (100)
+    
+    tmp := si.command ( $80, $01, 0)'cmd, param, args)
+    ser.Hex (tmp, 8)
+    ser.NewLine
+
+    tmp := si.command ( $A0, $01, %00110000)'cmd, param, args)
+    ser.Hex (tmp, 8)
+    ser.NewLine
+
+    tmp := si.command ( $80, $01, 0)'cmd, param, args)
+    ser.Hex (tmp, 8)
+    ser.NewLine
+
     Stop
     Flash (LED, 100)
 

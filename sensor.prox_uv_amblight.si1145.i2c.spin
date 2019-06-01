@@ -116,6 +116,44 @@ PUB VisibleLight
 ' Return data from visible light channel
     readReg (core#ALS_VIS_DATA0, 2, @result)
 
+PUB command(cmd, param, args) | tmp
+
+    case cmd
+        core#CMD_PARAM_QUERY:
+            cmd |= param
+            tmp := core#CMD_NOP
+            writeReg (core#COMMAND, 1, @tmp)
+            readReg (core#RESPONSE, 1, @result)
+            if result == $00
+                writeReg (core#COMMAND, 1, @cmd)
+            readReg (core#RESPONSE, 1, @result)
+'            if result and not (result & $80)
+            readReg (core#PARAM_RD, 1, @result)
+            return
+
+        core#CMD_PARAM_SET:
+            cmd |= param
+            tmp := core#CMD_NOP
+            writeReg (core#PARAM_WR, 1, @args)
+            writeReg (core#COMMAND, 1, @tmp)
+            readReg (core#RESPONSE, 1, @result)
+            if result == $00
+                writeReg (core#COMMAND, 1, @cmd)
+            readReg (core#RESPONSE, 1, @result)
+'            if result and not (result & $80)
+            readReg (core#RESPONSE, 1, @result)
+            return
+
+        core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE, core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
+        }   core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE, core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
+            tmp := core#CMD_NOP
+            writeReg (core#COMMAND, 1, @tmp)
+            readReg (core#RESPONSE, 1, @result)
+            if result == $00
+                writeReg (core#COMMAND, 1, @cmd)
+            readReg (core#RESPONSE, 1, @result)
+            return
+
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Read nr_bytes from the slave device into the address stored in buff_addr
     case reg                                                    'Basic register validation
