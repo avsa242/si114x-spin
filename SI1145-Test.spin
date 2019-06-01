@@ -32,6 +32,13 @@ PUB Main
 
     Setup
 
+    ser.Dec ( si.Running)
+    ser.NewLine
+    ser.Dec ( si.Suspended)
+    ser.NewLine
+    ser.Dec ( si.Sleeping)
+    ser.NewLine
+    ser.Dec ( si.Status)
     Stop
     Flash (LED, 100)
 

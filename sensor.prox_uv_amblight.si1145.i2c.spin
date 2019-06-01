@@ -21,6 +21,11 @@ CON
     DEF_HZ            = 400_000
     I2C_MAX_FREQ      = core#I2C_MAX_FREQ
 
+' Chip status
+    CHIP_STAT_SLEEP         = core#CHIP_STAT_SLEEP
+    CHIP_STAT_SUSPEND       = core#CHIP_STAT_SUSPEND
+    CHIP_STAT_RUNNING       = core#CHIP_STAT_RUNNING
+
 VAR
 
 
@@ -54,19 +59,51 @@ PUB Stop
     i2c.terminate
 
 PUB PartID
-
+' Part ID of sensor
+'   Returns:
+'       $45: Si1145
+'       $46: Si1146
+'       $47: Si1147
     readReg (core#PART_ID, 1, @result)
 
 PUB RevID
-
+' Revision
+'   Returns: $00
     readReg (core#REV_ID, 1, @result)
 
-PUB SeqID
+PUB Running
+' Running status
+'   Returns: TRUE if device is awake, FALSE otherwise
+    readReg (core#CHIP_STAT, 1, @result)
+    result := (result == core#CHIP_STAT_RUNNING)
 
+PUB SeqID
+' Sequencer revision
+'   Returns: $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
     readReg (core#SEQ_ID, 1, @result)
 
+PUB Sleeping
+' Sleeping status
+'   Returns: TRUE if device is in its lowest power state, FALSE otherwise
+    readReg (core#CHIP_STAT, 1, @result)
+    result := (result == core#CHIP_STAT_SLEEP)
+
+PUB Status
+' Chip status
+'   Returns:
+'       CHIP_STAT_RUNNING (%100): Device is awake
+'       CHIP_STAT_SUSPEND (%010): Device is in a low-power state, waiting for a measurement to complete
+'       CHIP_STAT_SLEEP (%001): Device is in its lowest power state
+    readReg (core#CHIP_STAT, 1, @result)
+
+PUB Suspended
+' Suspended status
+'   Returns: TRUE if device is in a low-power state, waiting for a measurement to complete, FALSE otherwise
+    readReg (core#CHIP_STAT, 1, @result)
+    result := (result == core#CHIP_STAT_SUSPEND)
+
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-'' Read num_bytes from the slave device into the address stored in buff_addr
+'' Read nr_bytes from the slave device into the address stored in buff_addr
     case reg                                                    'Basic register validation
         $00, $01, $02, $03, $04, $07, $10, $13..$18, $20..$2E, $30:
             cmd_packet.byte[0] := SLAVE_WR
@@ -83,7 +120,7 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
             return $DEADBEEF
 
 PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-'' Write num_bytes to the slave device from the address stored in buff_addr
+'' Write nr_bytes to the slave device from the address stored in buff_addr
     case reg                                                    'Basic register validation
         $00, $03, $04, $07, $10, $13..$18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
