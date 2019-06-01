@@ -32,13 +32,12 @@ PUB Main
 
     Setup
 
-    ser.Dec ( si.Running)
-    ser.NewLine
-    ser.Dec ( si.Suspended)
-    ser.NewLine
-    ser.Dec ( si.Sleeping)
-    ser.NewLine
-    ser.Dec ( si.Status)
+    repeat
+        ser.Position (0, 5)
+        ser.Hex (si.VisibleLight, 8)
+        ser.Position (0, 6)
+        ser.Hex (si.IRLight, 8)
+        time.MSleep (100)
     Stop
     Flash (LED, 100)
 

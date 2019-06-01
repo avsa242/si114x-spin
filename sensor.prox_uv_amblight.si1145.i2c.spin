@@ -64,6 +64,10 @@ PUB HWKey
     result := core#HW_KEY_EXPECTED
     writeReg (core#HW_KEY, 1, @result)
 
+PUB IRLight
+' Return data from infra-red light channel
+    readReg (core#ALS_IR_DATA0, 2, @result)
+
 PUB PartID
 ' Part ID of sensor
 '   Returns:
@@ -107,6 +111,10 @@ PUB Suspended
 '   Returns: TRUE if device is in a low-power state, waiting for a measurement to complete, FALSE otherwise
     readReg (core#CHIP_STAT, 1, @result)
     result := (result == core#CHIP_STAT_SUSPEND)
+
+PUB VisibleLight
+' Return data from visible light channel
+    readReg (core#ALS_VIS_DATA0, 2, @result)
 
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Read nr_bytes from the slave device into the address stored in buff_addr
