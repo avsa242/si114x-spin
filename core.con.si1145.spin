@@ -17,8 +17,13 @@ CON
 
 ' Register definitions
     PART_ID                     = $00
+        PART_ID_RESP_1145       = $45
+        PART_ID_RESP_1146       = $46
+        PART_ID_RESP_1147       = $47
+
     REV_ID                      = $01
     SEQ_ID                      = $02
+        SEQ_ID_RESP             = $08
 
     INT_CFG                     = $03
         FLD_INT_OE              = 0
@@ -80,6 +85,9 @@ CON
     PARAM_RD                    = $2E
 
     CHIP_STAT                   = $30
+        CHIP_STAT_SLEEP         = %001
+        CHIP_STAT_SUSPEND       = %010
+        CHIP_STAT_RUNNING       = %100
 
     ANA_IN_KEY_0                = $3B
     ANA_IN_KEY_1                = $3C

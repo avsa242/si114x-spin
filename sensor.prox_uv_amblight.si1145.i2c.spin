@@ -26,9 +26,9 @@ VAR
 
 OBJ
 
-    i2c : "com.i2c"                                             'PASM I2C Driver
-    core: "core.con.si1145.spin"                           'File containing your device's register set
-    time: "time"                                                'Basic timing functions
+    i2c : "com.i2c"
+    core: "core.con.si1145.spin"
+    time: "time"
 
 PUB Null
 ''This is not a top-level object
@@ -43,9 +43,9 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
         if I2C_HZ =< core#I2C_MAX_FREQ
             if okay := i2c.setupx (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
                 time.MSleep (1)
-                return okay
                 if i2c.present (SLAVE_WR)                       'Response from device?
-                    return okay
+                    if lookdown(PartID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
+                        return okay
 
     return FALSE                                                'If we got here, something went wrong
 
@@ -68,7 +68,7 @@ PUB SeqID
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Read num_bytes from the slave device into the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00..$FF:                                               ' Consult your device's datasheet!
+        $00, $01, $02, $03, $04, $07, $10, $13..$18, $20..$2E, $30:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
@@ -77,7 +77,7 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 
             i2c.start
             i2c.write (SLAVE_RD)
-            i2c.rd_block (buff_addr, nr_bytes, FALSE)
+            i2c.rd_block (buff_addr, nr_bytes, TRUE)
             i2c.stop
         OTHER:
             return $DEADBEEF
@@ -85,7 +85,7 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Write num_bytes to the slave device from the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00..$FF:                                               ' Consult your device's datasheet!
+        $00, $03, $04, $07, $10, $13..$18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
             i2c.start

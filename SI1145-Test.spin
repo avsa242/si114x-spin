@@ -31,14 +31,7 @@ VAR
 PUB Main
 
     Setup
-    ser.Hex (si.PartID, 8)
-    ser.NewLine
 
-    ser.Hex (si.RevID, 8)
-    ser.NewLine
-
-    ser.Hex (si.SeqID, 8)
-    ser.NewLine
     Stop
     Flash (LED, 100)
 
@@ -48,7 +41,13 @@ PUB Setup
     ser.Clear
     ser.Str(string("Serial terminal started", ser#NL))
     if _si_cog := si.Start
-        ser.Str(string("SI114x driver started", ser#NL))
+        ser.Str(string("SI114x driver started (Si11"))
+        ser.Hex (si.PartID, 2)
+        ser.Str (string(" rev "))
+        ser.Hex (si.RevID, 2)
+        ser.Str (string(", sequencer rev "))
+        ser.Hex (si.SeqID, 2)
+        ser.Str (string(" found)", ser#NL))
     else
         ser.Str(string("SI114x driver failed to start - halting", ser#NL))
         Stop
