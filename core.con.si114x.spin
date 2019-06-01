@@ -1,6 +1,6 @@
 {
     --------------------------------------------
-    Filename: core.con.si1145.spin
+    Filename: core.con.si114x.spin
     Author: Jesse Burt
     Description: Low-level constants
     Copyright (c) 2019

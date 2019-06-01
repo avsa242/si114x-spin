@@ -1,4 +1,4 @@
-# si1145-spin 
+# si114x-spin 
 ---------------
 
 This is a P8X32A/Propeller driver object for the Silicon Labs Si114x (5, 6, 7) series UV/Proximity/Ambient light sensors.

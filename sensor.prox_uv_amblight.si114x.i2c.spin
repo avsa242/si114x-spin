@@ -1,6 +1,6 @@
 {
     --------------------------------------------
-    Filename: sensor.prox_uv_amblight.si1145.i2c.spin
+    Filename: sensor.prox_uv_amblight.si114x.i2c.spin
     Author: Jesse Burt
     Description: Driver for the Silicon Labs Si114[5|6|7] series
         Proximity/UV/Amblient light sensor IC
@@ -32,7 +32,7 @@ VAR
 OBJ
 
     i2c : "com.i2c"
-    core: "core.con.si1145.spin"
+    core: "core.con.si114x.spin"
     time: "time"
 
 PUB Null

@@ -1,8 +1,8 @@
 {
     --------------------------------------------
-    Filename: SI1145-Test.spin
-    Author:
-    Description:
+    Filename: SI114x-Test.spin
+    Author: Jesse Burt
+    Description: Test for the Si114x driver
     Copyright (c) 2019
     Started Jun 01, 2019
     Updated Jun 01, 2019
@@ -22,7 +22,7 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal"
     time    : "time"
-    si      : "sensor.prox_uv_amblight.si1145.i2c"
+    si      : "sensor.prox_uv_amblight.si114x.i2c"
 
 VAR
 
