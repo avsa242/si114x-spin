@@ -65,7 +65,7 @@ PUB HWKey
     writeReg (core#HW_KEY, 1, @result)
 
 PUB IRChan(enabled) | tmp
-' Enable the visible ambient light source data channel
+' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     tmp := command ( core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
