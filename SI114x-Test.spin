@@ -45,6 +45,14 @@ PUB Main | tmp
     ser.Hex (tmp, 8)
     ser.NewLine
 
+    repeat
+        tmp := si.command ( %000_00110, 0, 0)
+    
+        ser.Position (0, 6)
+        ser.Hex ( si.VisibleLight, 8)
+        ser.NewLine
+        ser.Hex ( si.IRLight, 8)
+        time.MSleep (250)
     Stop
     Flash (LED, 100)
 

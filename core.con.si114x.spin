@@ -96,6 +96,7 @@ CON
     ANA_IN_KEY_2                = $3D
     ANA_IN_KEY_3                = $3E
 
+' COMMAND register values
     CMD_PARAM_QUERY             = %100 << 5
     CMD_PARAM_SET               = %101 << 5
     CMD_NOP                     = %000_00000
@@ -112,6 +113,7 @@ CON
     CMD_ALS_AUTO                = %000_01110
     CMD_PSALS_AUTO              = %000_01111
 
+' RESPONSE register return values
     RSP_NO_ERROR                = %0000 << 4
     RSP_INVALID_SETTING         = %1000_0000
     RSP_PS1_ADC_OVERFLOW        = %1000_1000
@@ -120,6 +122,104 @@ CON
     RSP_ALS_VIS_ADC_OVERFLOW    = %1000_1100
     RSP_ALS_IR_ADC_OVERFLOW     = %1000_1101
     RSP_AUX_ADC_OVERFLOW        = %1000_1110
+
+' Sequencer RAM Parameters
+    PARM_I2C_ADDR               = $00
+
+    PARM_CHLIST                 = $01
+    PARM_CHLIST_MASK            = $F7
+        FLD_EN_PS1              = 0
+        FLD_EN_PS2              = 1
+        FLD_EN_PS3              = 2
+        FLD_EN_ALS_VIS          = 4
+        FLD_EN_ALS_IR           = 5
+        FLD_EN_AUX              = 6
+        FLD_EN_UV               = 7
+
+    PARM_PSLED12_SELECT         = $02
+    PARM_PSLED12_SELECT_MASK    = $77
+        FLD_PS1_LED             = 0
+        FLD_PS2_LED             = 4
+        BITS_PS1_LED            = %111
+        BITS_PS2_LED            = %111
+        MASK_PS1_LED            = PARM_PSLED12_SELECT_MASK ^ (BITS_PS1_LED << FLD_PS1_LED)
+        MASK_PS2_LED            = PARM_PSLED12_SELECT_MASK ^ (BITS_PS2_LED << FLD_PS2_LED)
+
+    PARM_PSLED3_SELECT          = $03
+    PARM_PSLED3_SELECT_MASK     = $07
+        FLD_PS3_LED             = 0
+        BITS_PS3_LED            = %111
+
+    PARM_PS_ENCODING            = $05
+    PARM_PS_ENCODING_MASK       = $70
+        FLD_PS1_ALIGN           = 4
+        FLD_PS2_ALIGN           = 5
+        FLD_PS3_ALIGN           = 6
+        MASK_PS1_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS1_ALIGN)
+        MASK_PS2_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS2_ALIGN)
+        MASK_PS3_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS3_ALIGN)
+
+    PARM_ALS_ENCODING           = $06
+    PARM_ALS_ENCODING_MASK      = $30
+        FLD_ALS_VIS_ALIGN       = 4
+        FLD_ALS_IR_ALIGN        = 5
+        MASK_ALS_VIS_ALIGN      = PARM_ALS_ENCODING_MASK ^ (1 << FLD_ALS_VIS_ALIGN)
+        MASK_ALS_IR_ALIGN       = PARM_ALS_ENCODING_MASK ^ (1 << FLD_ALS_IR_ALIGN)
+
+    PARM_PS1_ADCMUX             = $07
+    PARM_PS2_ADCMUX             = $08
+    PARM_PS3_ADCMUX             = $09
+
+    PARM_PS_ADC_COUNTER         = $0A
+    PARM_PS_ADC_COUNTER_MASK    = $70
+        FLD_PS_ADC_REC          = 4
+        BITS_PS_ADC_REC         = %111
+
+    PARM_PS_ADC_GAIN            = $0B
+    PARM_PS_ADC_GAIN_MASK       = $07
+        FLD_PS_ADC_GAIN         = 0
+        BITS_PS_ADC_GAIN        = %111
+
+    PARM_PS_ADC_MISC            = $0C
+    PARM_PS_ADC_MISC_MASK       = $22
+        FLD_PS_ADC_MODE         = 2
+        FLD_PS_RANGE            = 5
+        MASK_PS_ADC_MODE        = PARM_PS_ADC_MISC_MASK ^ (1 << FLD_PS_ADC_MODE)
+        MASK_PS_RANGE           = PARM_PS_ADC_MISC_MASK ^ (1 << FLD_PS_RANGE)
+
+    PARM_ALS_IR_ADCMUX          = $0E
+
+    PARM_AUX_ADCMUX             = $0F
+
+    PARM_ALS_VIS_ADC_COUNTER    = $10
+    PARM_ALS_VIS_ADC_COUNTER_MASK   = $70
+            FLD_VIS_ADC_REC         = 4
+            BITS_VIS_ADC_REC        = %111
+
+    PARM_ALS_VIS_ADC_GAIN       = $11
+    PARM_ALS_VIS_ADC_GAIN_MASK  = $07
+        FLD_ALS_VIS_ADC_GAIN    = 0
+        BITS_ALS_VIS_ADC_GAIN   = %111
+
+    PARM_ALS_VIS_ADC_MISC       = $12
+    PARM_ALS_VIS_ADC_MISC_MASK  = $20
+        FLD_VIS_RANGE           = 5
+
+    PARM_LED_REC                = $1C
+
+    PARM_ALS_IR_ADC_COUNTER     = $1D
+    PARM_ALS_IR_ADC_COUNTER_MASK    = $70
+        FLD_IR_ADC_REC              = 4
+        BITS_IR_ADC_REC             = %111
+
+    PARM_ALS_IR_ADC_GAIN        = $1E
+    PARM_ALS_IR_ADC_GAIN_MASK   = $07
+        FLD_ALS_IR_ADC_GAIN     = 0
+        BITS_ALS_IR_ADC_GAIN    = %111
+
+    PARM_ALS_IR_ADC_MISC        = $1F
+    PARM_ALS_IR_ADC_MISC_MASK   = $20
+        FLD_IR_RANGE            = 5
 
 PUB Null
 '' This is not a top-level object
