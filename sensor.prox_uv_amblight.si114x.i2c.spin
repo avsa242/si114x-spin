@@ -144,6 +144,22 @@ PUB Suspended
     readReg (core#CHIP_STAT, 1, @result)
     result := (result == core#CHIP_STAT_SUSPEND)
 
+PUB UVChan(enabled) | tmp
+' Enable the UV index source data channel
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    case ||enabled
+        0, 1:
+            enabled := (||enabled) << core#FLD_EN_UV
+        OTHER:
+            result := ((tmp >> core#FLD_EN_UV) & %1) * TRUE
+            return result
+
+    tmp &= core#MASK_EN_UV
+    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+
 PUB VisibleChan(enabled) | tmp
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
