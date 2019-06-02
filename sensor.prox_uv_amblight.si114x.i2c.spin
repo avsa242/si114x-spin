@@ -59,6 +59,22 @@ PUB Stop
 ' Put any other housekeeping code here required/recommended by your device before shutting down
     i2c.terminate
 
+PUB AUXChan(enabled) | tmp
+' Enable the auxiliary source data channel
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    case ||enabled
+        0, 1:
+            enabled := (||enabled) << core#FLD_EN_AUX
+        OTHER:
+            result := ((tmp >> core#FLD_EN_AUX) & %1) * TRUE
+            return result
+
+    tmp &= core#MASK_EN_AUX
+    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+
 PUB HWKey
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
     result := core#HW_KEY_EXPECTED
@@ -68,7 +84,7 @@ PUB IRChan(enabled) | tmp
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command ( core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_ALS_IR
@@ -132,7 +148,7 @@ PUB VisibleChan(enabled) | tmp
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command ( core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_ALS_VIS
