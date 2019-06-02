@@ -33,15 +33,16 @@ PUB Main | tmp
     Setup
 
     
-    tmp := si.VisibleChan (-2)
+    si.VisibleChan (FALSE)
+    tmp := si.IRChan (-2)
     ser.Hex (tmp, 8)
     ser.NewLine
 
-    tmp := si.VisibleChan (TRUE)
+    tmp := si.IRChan (TRUE)
     ser.Hex (tmp, 8)
     ser.NewLine
 
-    tmp := si.VisibleChan (-2)
+    tmp := si.IRChan (-2)
     ser.Hex (tmp, 8)
     ser.NewLine
 
