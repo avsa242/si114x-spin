@@ -17,7 +17,7 @@ This is a P8X32A/Propeller driver object for the Silicon Labs Si114x (5, 6, 7) s
 
 ## TODO
 
-- [ ] Verify reading of ambient light and IR measurements
+- [x] Verify reading of ambient light and IR measurements
 - [ ] Verify reading of UV Index measurement
 - [ ] Cleanup RAM parameter API
 - [ ] Implement measure rate

@@ -135,6 +135,14 @@ CON
         FLD_EN_ALS_IR           = 5
         FLD_EN_AUX              = 6
         FLD_EN_UV               = 7
+        MASK_EN_PS1             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS1)
+        MASK_EN_PS2             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS2)
+        MASK_EN_PS3             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS3)
+        MASK_EN_ALS_VIS         = PARM_CHLIST_MASK ^ (1 << FLD_EN_ALS_VIS)
+        MASK_EN_ALS_IR          = PARM_CHLIST_MASK ^ (1 << FLD_EN_ALS_IR)
+        MASK_EN_AUX             = PARM_CHLIST_MASK ^ (1 << FLD_EN_AUX)
+        MASK_EN_UV              = PARM_CHLIST_MASK ^ (1 << FLD_EN_UV)
+
 
     PARM_PSLED12_SELECT         = $02
     PARM_PSLED12_SELECT_MASK    = $77

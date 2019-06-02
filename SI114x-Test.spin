@@ -33,15 +33,15 @@ PUB Main | tmp
     Setup
 
     
-    tmp := si.command ( $80, $01, 0)'cmd, param, args)
+    tmp := si.VisibleChan (-2)
     ser.Hex (tmp, 8)
     ser.NewLine
 
-    tmp := si.command ( $A0, $01, %00110000)'cmd, param, args)
+    tmp := si.VisibleChan (TRUE)
     ser.Hex (tmp, 8)
     ser.NewLine
 
-    tmp := si.command ( $80, $01, 0)'cmd, param, args)
+    tmp := si.VisibleChan (-2)
     ser.Hex (tmp, 8)
     ser.NewLine
 
