@@ -66,6 +66,9 @@ CON
         FLD_CMD_INT             = 5
         BITS_ALS_INT            = %11
 
+    CAL_DATA                    = $22   '..$2D
+    CAL_DATA_LEN                = 11
+
     ALS_VIS_DATA0               = $22
     ALS_VIS_DATA1               = $23
 

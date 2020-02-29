@@ -1,12 +1,12 @@
 {
     --------------------------------------------
-    Filename: sensor.prox_uv_amblight.si114x.i2c.spin
+    Filename: sensor.light.si114x.i2c.spin
     Author: Jesse Burt
     Description: Driver for the Silicon Labs Si114[5|6|7] series
         Proximity/UV/Amblient light sensor IC
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Jun 01, 2019
-    Updated Jun 01, 2019
+    Updated Feb 29, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -28,6 +28,7 @@ CON
 
 VAR
 
+    word _cal_data[6]
 
 OBJ
 
@@ -47,7 +48,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
     if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31)
         if I2C_HZ =< core#I2C_MAX_FREQ
             if okay := i2c.setupx (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
-                time.MSleep (1)
+                time.MSleep (25)
                 if i2c.present (SLAVE_WR)                       'Response from device?
                     if lookdown(PartID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
                         HWKey
@@ -75,6 +76,16 @@ PUB AUXChan(enabled) | tmp
     tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
     command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
 
+PUB CalData(cal_word)
+' Return a word of calibration data
+'   Valid values: 0..5
+'   Any other value is ignored
+    case cal_word
+        0..5:
+            return _cal_data[cal_word]
+        OTHER:
+            return
+
 PUB HWKey
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
     result := core#HW_KEY_EXPECTED
@@ -100,13 +111,18 @@ PUB IRLight
 ' Return data from infra-red light channel
     readReg (core#ALS_IR_DATA0, 2, @result)
 
-PUB PartID
+PUB DeviceID
 ' Part ID of sensor
 '   Returns:
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
     readReg (core#PART_ID, 1, @result)
+
+PUB ReadCalData
+' Read calibration data into 6-word array at buff_addr
+    command (core#CMD_GET_CAL, 0, 0)
+    readReg (core#CAL_DATA, 12, @_cal_data)
 
 PUB RevID
 ' Revision
