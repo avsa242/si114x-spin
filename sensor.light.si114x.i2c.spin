@@ -50,7 +50,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
             if okay := i2c.setupx (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
                 time.MSleep (25)
                 if i2c.present (SLAVE_WR)                       'Response from device?
-                    if lookdown(PartID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
+                    if lookdown(DeviceID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
                         HWKey
                         return okay
 
@@ -86,6 +86,14 @@ PUB CalData(cal_word)
         OTHER:
             return
 
+PUB DeviceID
+' Part ID of sensor
+'   Returns:
+'       $45: Si1145
+'       $46: Si1146
+'       $47: Si1147
+    readReg (core#PART_ID, 1, @result)
+
 PUB HWKey
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
     result := core#HW_KEY_EXPECTED
@@ -111,18 +119,32 @@ PUB IRLight
 ' Return data from infra-red light channel
     readReg (core#ALS_IR_DATA0, 2, @result)
 
-PUB DeviceID
-' Part ID of sensor
-'   Returns:
-'       $45: Si1145
-'       $46: Si1146
-'       $47: Si1147
-    readReg (core#PART_ID, 1, @result)
+PUB MeasureRate(usec) | tmp
+' Set time duration between measurements, in microseconds
+'   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
+'   Any other value polls the chip and returns the current setting
+    tmp := $0000
+    readReg(core#MEAS_RATE0, 2, @tmp)
+    case usec
+        31..2047969:                        ' 31.25uS .. 2047969.75uS, truncated
+            usec *= 1_00                    ' Scaling, to preseve accuracy
+            usec /= 31_25
+        OTHER:
+            result := (tmp * 31_25) / 100   ' Scaling, to preserve accuracy
+            return
+
+    writeReg(core#MEAS_RATE0, 2, @usec)
 
 PUB ReadCalData
 ' Read calibration data into 6-word array at buff_addr
     command (core#CMD_GET_CAL, 0, 0)
     readReg (core#CAL_DATA, 12, @_cal_data)
+
+PUB Reset
+' Perform soft-reset
+    command (core#CMD_RESET, 0, 0)
+    time.MSleep(1)
+    HWKey
 
 PUB RevID
 ' Revision
@@ -225,7 +247,7 @@ PUB command(cmd, param, args) | tmp
             return
 
         core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE, core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
-        }   core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE, core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
+    }   core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE, core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
             tmp := core#CMD_NOP
             writeReg (core#COMMAND, 1, @tmp)
             readReg (core#RESPONSE, 1, @result)
@@ -237,7 +259,7 @@ PUB command(cmd, param, args) | tmp
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Read nr_bytes from the slave device into the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00, $01, $02, $03, $04, $07, $10, $13..$18, $20..$2E, $30:
+        $00, $01, $02, $03, $04, $07, $08, $09, $10, $13..$18, $20..$2E, $30:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
@@ -254,7 +276,7 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 '' Write nr_bytes to the slave device from the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00, $03, $04, $07, $10, $13..$18, $20..$2E:
+        $00, $01, $03, $04, $05, $06, $07, $08, $09, $10, $0B, $0F, $12, $13..$18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
