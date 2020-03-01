@@ -125,6 +125,26 @@ PUB IRData
 ' Return data from infra-red light channel
     readReg (core#ALS_IR_DATA0, 2, @result)
 
+PUB IRGain(gain) | tmp
+' Gain factor of infra-red light sensor
+'   Valid values: 1, 16, 64, 128
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    tmp := command (core#CMD_PARAM_QUERY, core#ALS_IR_ADC_GAIN, 0)
+    case gain
+        1: gain := %000
+        16: gain := %100
+        64: gain := %110
+        128: gain := %111
+        OTHER:
+            result := lookupz(tmp & core#BITS_ALS_IR_ADC_GAIN: 1, 0, 0, 0, 16, 0, 64, 128)
+            return
+
+    command (core#CMD_PARAM_SET, core#ALS_IR_ADC_GAIN, gain)
+    gain <<= core#FLD_IR_ADC_REC                                   ' Set the one's complement of the gain val
+    command (core#CMD_PARAM_SET, core#ALS_IR_ADC_COUNTER, !gain)   ' to ADC recovery period, per datasheet
+
+
 PUB IROverflow
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
@@ -247,6 +267,25 @@ PUB VisibleChan(enabled) | tmp
 PUB VisibleData
 ' Return data from visible light channel
     readReg (core#ALS_VIS_DATA0, 2, @result)
+
+PUB VisibleGain(gain) | tmp
+' Gain factor of visible light sensor
+'   Valid values: 1, 16, 64, 128
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    tmp := command (core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_GAIN, 0)
+    case gain
+        1: gain := %000
+        16: gain := %100
+        64: gain := %110
+        128: gain := %111
+        OTHER:
+            result := lookupz(tmp & core#BITS_ALS_VIS_ADC_GAIN: 1, 0, 0, 0, 16, 0, 64, 128)
+            return
+
+    command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_GAIN, gain)
+    gain <<= core#FLD_VIS_ADC_REC                                   ' Set the one's complement of the gain val
+    command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)   ' to ADC recovery period, per datasheet
 
 PUB VisibleOverflow
 ' Flag indicating visible light data conversion has overflowed
