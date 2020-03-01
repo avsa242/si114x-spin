@@ -37,6 +37,11 @@ CON
     PAUSE_ALS               = core#CMD_ALS_PAUSE
     PAUSE_PSALS             = core#CMD_PSALS_PAUSE
 
+' Visible/IR sensor measurement range
+    NORMAL                  = $00
+    HIGH                    = $20
+
+
 VAR
 
     word _cal_data[6]
@@ -152,6 +157,21 @@ PUB IROverflow
     readReg (core#RESPONSE, 1, @result)
     return (result == core#RSP_ALS_IR_ADC_OVERFLOW)
 
+PUB IRRange(range) | tmp
+' Set measurement range of infra-red light sensor
+'   Valid values:
+'       NORMAL ($00): Normal signal range/high sensitivity
+'       HIGH ($20): High signal range (gain divided by 14.5)
+    tmp := $00
+    tmp := command (core#CMD_PARAM_QUERY, core#ALS_IR_ADC_MISC, 0)
+    case range
+        NORMAL, HIGH:
+        OTHER:
+            return tmp
+
+    range &= core#ALS_IR_ADC_MISC_MASK
+    return command (core#CMD_PARAM_SET, core#ALS_IR_ADC_MISC, range)
+
 PUB MeasureRate(usec) | tmp
 ' Set time duration between measurements, in microseconds
 '   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
@@ -193,8 +213,9 @@ PUB ReadCalData
 PUB Reset
 ' Perform soft-reset
     command (core#CMD_RESET, 0, 0)
-    time.MSleep(1)
-    HWKey
+    time.MSleep(10)
+    hwKey
+    time.MSleep(10)
     OpMode (ONE_PSALS)
 
 PUB RevID
@@ -249,6 +270,20 @@ PUB UVChan(enabled) | tmp
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
+PUB UVCoefficients(rw, coeffs) | tmp
+' Set coefficients used to calculate UV index readings
+'   Valid values:
+'       rw: READ (0), WRITE (1)
+'   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
+'       UCOEF3_UCOEF2_UCOEF1_UCOEF0
+    tmp := $00_00_00_00
+    readReg(core#UCOEF0, 4, @tmp)
+    case rw
+        0:                                              ' Read
+            return tmp
+        1:                                              ' Write
+            writeReg(core#UCOEF0, 4, @coeffs)
+
 PUB UVData | tmp
 ' Return data from UV index channel
     readReg (core#AUX_DATA0, 2, @result)
@@ -297,6 +332,20 @@ PUB VisibleOverflow
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     readReg (core#RESPONSE, 1, @result)
     return (result == core#RSP_ALS_VIS_ADC_OVERFLOW)
+
+PUB VisibleRange(range) | tmp
+' Set measurement range of visible light sensor
+'   Valid values:
+'       NORMAL ($00): Normal signal range/high sensitivity
+'       HIGH ($20): High signal range (gain divided by 14.5)
+    tmp := $00
+    tmp := command (core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_MISC, 0)
+    case range
+        NORMAL, HIGH:
+        OTHER:
+            return tmp
+
+    return command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_MISC, range)
 
 PRI command(cmd, param, args) | tmp
 
@@ -361,7 +410,7 @@ PRI readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 PRI writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Write nr_bytes to the slave device from the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $03, $04, $07, $08, $09, $0F, $10, $17, $18, $20..$2E:
+        $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
