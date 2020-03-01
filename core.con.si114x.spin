@@ -39,6 +39,7 @@ CON
 
     MEAS_RATE0                  = $08
     MEAS_RATE1                  = $09
+
     PS_LED21                    = $0F
         FLD_LED1_I              = 0
         FLD_LED2_I              = 4
@@ -127,10 +128,10 @@ CON
     RSP_AUX_ADC_OVERFLOW        = %1000_1110
 
 ' Sequencer RAM Parameters
-    PARM_I2C_ADDR               = $00
+    I2C_ADDR                    = $00
 
-    PARM_CHLIST                 = $01
-    PARM_CHLIST_MASK            = $F7
+    CHLIST                      = $01
+    CHLIST_MASK                 = $F7
         FLD_EN_PS1              = 0
         FLD_EN_PS2              = 1
         FLD_EN_PS3              = 2
@@ -138,100 +139,100 @@ CON
         FLD_EN_ALS_IR           = 5
         FLD_EN_AUX              = 6
         FLD_EN_UV               = 7
-        MASK_EN_PS1             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS1)
-        MASK_EN_PS2             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS2)
-        MASK_EN_PS3             = PARM_CHLIST_MASK ^ (1 << FLD_EN_PS3)
-        MASK_EN_ALS_VIS         = PARM_CHLIST_MASK ^ (1 << FLD_EN_ALS_VIS)
-        MASK_EN_ALS_IR          = PARM_CHLIST_MASK ^ (1 << FLD_EN_ALS_IR)
-        MASK_EN_AUX             = PARM_CHLIST_MASK ^ (1 << FLD_EN_AUX)
-        MASK_EN_UV              = PARM_CHLIST_MASK ^ (1 << FLD_EN_UV)
+        MASK_EN_PS1             = CHLIST_MASK ^ (1 << FLD_EN_PS1)
+        MASK_EN_PS2             = CHLIST_MASK ^ (1 << FLD_EN_PS2)
+        MASK_EN_PS3             = CHLIST_MASK ^ (1 << FLD_EN_PS3)
+        MASK_EN_ALS_VIS         = CHLIST_MASK ^ (1 << FLD_EN_ALS_VIS)
+        MASK_EN_ALS_IR          = CHLIST_MASK ^ (1 << FLD_EN_ALS_IR)
+        MASK_EN_AUX             = CHLIST_MASK ^ (1 << FLD_EN_AUX)
+        MASK_EN_UV              = CHLIST_MASK ^ (1 << FLD_EN_UV)
 
 
-    PARM_PSLED12_SELECT         = $02
-    PARM_PSLED12_SELECT_MASK    = $77
+    PSLED12_SELECT              = $02
+    PSLED12_SELECT_MASK         = $77
         FLD_PS1_LED             = 0
         FLD_PS2_LED             = 4
         BITS_PS1_LED            = %111
         BITS_PS2_LED            = %111
-        MASK_PS1_LED            = PARM_PSLED12_SELECT_MASK ^ (BITS_PS1_LED << FLD_PS1_LED)
-        MASK_PS2_LED            = PARM_PSLED12_SELECT_MASK ^ (BITS_PS2_LED << FLD_PS2_LED)
+        MASK_PS1_LED            = PSLED12_SELECT_MASK ^ (BITS_PS1_LED << FLD_PS1_LED)
+        MASK_PS2_LED            = PSLED12_SELECT_MASK ^ (BITS_PS2_LED << FLD_PS2_LED)
 
-    PARM_PSLED3_SELECT          = $03
-    PARM_PSLED3_SELECT_MASK     = $07
+    PSLED3_SELECT               = $03
+    PSLED3_SELECT_MASK          = $07
         FLD_PS3_LED             = 0
         BITS_PS3_LED            = %111
 
-    PARM_PS_ENCODING            = $05
-    PARM_PS_ENCODING_MASK       = $70
+    PS_ENCODING                 = $05
+    PS_ENCODING_MASK            = $70
         FLD_PS1_ALIGN           = 4
         FLD_PS2_ALIGN           = 5
         FLD_PS3_ALIGN           = 6
-        MASK_PS1_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS1_ALIGN)
-        MASK_PS2_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS2_ALIGN)
-        MASK_PS3_ALIGN          = PARM_PS_ENCODING_MASK ^ (1 << FLD_PS3_ALIGN)
+        MASK_PS1_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS1_ALIGN)
+        MASK_PS2_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS2_ALIGN)
+        MASK_PS3_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS3_ALIGN)
 
-    PARM_ALS_ENCODING           = $06
-    PARM_ALS_ENCODING_MASK      = $30
+    ALS_ENCODING                = $06
+    ALS_ENCODING_MASK           = $30
         FLD_ALS_VIS_ALIGN       = 4
         FLD_ALS_IR_ALIGN        = 5
-        MASK_ALS_VIS_ALIGN      = PARM_ALS_ENCODING_MASK ^ (1 << FLD_ALS_VIS_ALIGN)
-        MASK_ALS_IR_ALIGN       = PARM_ALS_ENCODING_MASK ^ (1 << FLD_ALS_IR_ALIGN)
+        MASK_ALS_VIS_ALIGN      = ALS_ENCODING_MASK ^ (1 << FLD_ALS_VIS_ALIGN)
+        MASK_ALS_IR_ALIGN       = ALS_ENCODING_MASK ^ (1 << FLD_ALS_IR_ALIGN)
 
-    PARM_PS1_ADCMUX             = $07
-    PARM_PS2_ADCMUX             = $08
-    PARM_PS3_ADCMUX             = $09
+    PS1_ADCMUX                  = $07
+    PS2_ADCMUX                  = $08
+    PS3_ADCMUX                  = $09
 
-    PARM_PS_ADC_COUNTER         = $0A
-    PARM_PS_ADC_COUNTER_MASK    = $70
+    PS_ADC_COUNTER              = $0A
+    PS_ADC_COUNTER_MASK         = $70
         FLD_PS_ADC_REC          = 4
         BITS_PS_ADC_REC         = %111
 
-    PARM_PS_ADC_GAIN            = $0B
-    PARM_PS_ADC_GAIN_MASK       = $07
+    PS_ADC_GAIN                 = $0B
+    PS_ADC_GAIN_MASK            = $07
         FLD_PS_ADC_GAIN         = 0
         BITS_PS_ADC_GAIN        = %111
 
-    PARM_PS_ADC_MISC            = $0C
-    PARM_PS_ADC_MISC_MASK       = $22
+    PS_ADC_MISC                 = $0C
+    PS_ADC_MISC_MASK            = $22
         FLD_PS_ADC_MODE         = 2
         FLD_PS_RANGE            = 5
-        MASK_PS_ADC_MODE        = PARM_PS_ADC_MISC_MASK ^ (1 << FLD_PS_ADC_MODE)
-        MASK_PS_RANGE           = PARM_PS_ADC_MISC_MASK ^ (1 << FLD_PS_RANGE)
+        MASK_PS_ADC_MODE        = PS_ADC_MISC_MASK ^ (1 << FLD_PS_ADC_MODE)
+        MASK_PS_RANGE           = PS_ADC_MISC_MASK ^ (1 << FLD_PS_RANGE)
 
-    PARM_ALS_IR_ADCMUX          = $0E
+    ALS_IR_ADCMUX               = $0E
 
-    PARM_AUX_ADCMUX             = $0F
+    AUX_ADCMUX                  = $0F
         AUX_ADCMUX_TEMPERATURE  = $65
         AUX_ADCMUX_VDDVOLTAGE   = $75
 
-    PARM_ALS_VIS_ADC_COUNTER    = $10
-    PARM_ALS_VIS_ADC_COUNTER_MASK   = $70
-            FLD_VIS_ADC_REC         = 4
-            BITS_VIS_ADC_REC        = %111
+    ALS_VIS_ADC_COUNTER         = $10
+    ALS_VIS_ADC_COUNTER_MASK    = $70
+            FLD_VIS_ADC_REC     = 4
+            BITS_VIS_ADC_REC    = %111
 
-    PARM_ALS_VIS_ADC_GAIN       = $11
-    PARM_ALS_VIS_ADC_GAIN_MASK  = $07
+    ALS_VIS_ADC_GAIN            = $11
+    ALS_VIS_ADC_GAIN_MASK       = $07
         FLD_ALS_VIS_ADC_GAIN    = 0
         BITS_ALS_VIS_ADC_GAIN   = %111
 
-    PARM_ALS_VIS_ADC_MISC       = $12
-    PARM_ALS_VIS_ADC_MISC_MASK  = $20
+    ALS_VIS_ADC_MISC            = $12
+    ALS_VIS_ADC_MISC_MASK       = $20
         FLD_VIS_RANGE           = 5
 
-    PARM_LED_REC                = $1C
+    LED_REC                     = $1C
 
-    PARM_ALS_IR_ADC_COUNTER     = $1D
-    PARM_ALS_IR_ADC_COUNTER_MASK    = $70
-        FLD_IR_ADC_REC              = 4
-        BITS_IR_ADC_REC             = %111
+    ALS_IR_ADC_COUNTER          = $1D
+    ALS_IR_ADC_COUNTER_MASK     = $70
+        FLD_IR_ADC_REC          = 4
+        BITS_IR_ADC_REC         = %111
 
-    PARM_ALS_IR_ADC_GAIN        = $1E
-    PARM_ALS_IR_ADC_GAIN_MASK   = $07
+    ALS_IR_ADC_GAIN             = $1E
+    ALS_IR_ADC_GAIN_MASK        = $07
         FLD_ALS_IR_ADC_GAIN     = 0
         BITS_ALS_IR_ADC_GAIN    = %111
 
-    PARM_ALS_IR_ADC_MISC        = $1F
-    PARM_ALS_IR_ADC_MISC_MASK   = $20
+    ALS_IR_ADC_MISC             = $1F
+    ALS_IR_ADC_MISC_MASK        = $20
         FLD_IR_RANGE            = 5
 
 PUB Null

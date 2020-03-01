@@ -64,7 +64,7 @@ PUB AUXChan(enabled) | tmp
 ' Enable the auxiliary source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_AUX
@@ -73,8 +73,8 @@ PUB AUXChan(enabled) | tmp
             return result
 
     tmp &= core#MASK_EN_AUX
-    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+    tmp := (tmp | enabled) & core#CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
 PUB CalData(cal_word)
 ' Return a word of calibration data
@@ -103,7 +103,7 @@ PUB IRChan(enabled) | tmp
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_ALS_IR
@@ -112,8 +112,8 @@ PUB IRChan(enabled) | tmp
             return result
 
     tmp &= core#MASK_EN_ALS_IR
-    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+    tmp := (tmp | enabled) & core#CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
 PUB IRLight
 ' Return data from infra-red light channel
@@ -186,7 +186,7 @@ PUB UVChan(enabled) | tmp
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_UV
@@ -195,14 +195,14 @@ PUB UVChan(enabled) | tmp
             return result
 
     tmp &= core#MASK_EN_UV
-    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+    tmp := (tmp | enabled) & core#CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
 PUB VisibleChan(enabled) | tmp
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#PARM_CHLIST, 0)
+    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
             enabled := (||enabled) << core#FLD_EN_ALS_VIS
@@ -211,14 +211,14 @@ PUB VisibleChan(enabled) | tmp
             return result
 
     tmp &= core#MASK_EN_ALS_VIS
-    tmp := (tmp | enabled) & core#PARM_CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#PARM_CHLIST, tmp)
+    tmp := (tmp | enabled) & core#CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
 PUB VisibleLight
 ' Return data from visible light channel
     readReg (core#ALS_VIS_DATA0, 2, @result)
 
-PUB command(cmd, param, args) | tmp
+PRI command(cmd, param, args) | tmp
 
     case cmd
         core#CMD_PARAM_QUERY:
@@ -256,10 +256,10 @@ PUB command(cmd, param, args) | tmp
             readReg (core#RESPONSE, 1, @result)
             return
 
-PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-'' Read nr_bytes from the slave device into the address stored in buff_addr
+PRI readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
+' Read nr_bytes from the slave device into the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00, $01, $02, $03, $04, $07, $08, $09, $10, $13..$18, $20..$2E, $30:
+        $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
@@ -273,10 +273,10 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
         OTHER:
             return $DEADBEEF
 
-PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-'' Write nr_bytes to the slave device from the address stored in buff_addr
+PRI writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
+' Write nr_bytes to the slave device from the address stored in buff_addr
     case reg                                                    'Basic register validation
-        $00, $01, $03, $04, $05, $06, $07, $08, $09, $10, $0B, $0F, $12, $13..$18, $20..$2E:
+        $03, $04, $07, $08, $09, $0F, $10, $17, $18, $20..$2E:
             cmd_packet.byte[0] := SLAVE_WR
             cmd_packet.byte[1] := reg
 
@@ -285,6 +285,7 @@ PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
             repeat tmp from 0 to nr_bytes-1
                 i2c.write (byte[buff_addr][tmp])
             i2c.stop
+
         OTHER:
             return
 
