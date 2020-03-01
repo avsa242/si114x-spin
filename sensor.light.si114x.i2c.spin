@@ -94,11 +94,6 @@ PUB DeviceID
 '       $47: Si1147
     readReg (core#PART_ID, 1, @result)
 
-PUB HWKey
-' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
-    result := core#HW_KEY_EXPECTED
-    writeReg (core#HW_KEY, 1, @result)
-
 PUB IRChan(enabled) | tmp
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
@@ -255,6 +250,11 @@ PRI command(cmd, param, args) | tmp
                 writeReg (core#COMMAND, 1, @cmd)
             readReg (core#RESPONSE, 1, @result)
             return
+
+PRI hwKey
+' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
+    result := core#HW_KEY_EXPECTED
+    writeReg (core#HW_KEY, 1, @result)
 
 PRI readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Read nr_bytes from the slave device into the address stored in buff_addr
