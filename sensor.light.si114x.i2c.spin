@@ -26,6 +26,17 @@ CON
     CHIP_STAT_SUSPEND       = core#CHIP_STAT_SUSPEND
     CHIP_STAT_RUNNING       = core#CHIP_STAT_RUNNING
 
+' Operation modes
+    ONE_PS                  = core#CMD_PS_FORCE
+    ONE_ALS                 = core#CMD_ALS_FORCE
+    ONE_PSALS               = core#CMD_PSALS_FORCE
+    CONT_PS                 = core#CMD_PS_AUTO
+    CONT_ALS                = core#CMD_ALS_AUTO
+    CONT_PSALS              = core#CMD_PSALS_AUTO
+    PAUSE_PS                = core#CMD_PS_PAUSE
+    PAUSE_ALS               = core#CMD_ALS_PAUSE
+    PAUSE_PSALS             = core#CMD_PSALS_PAUSE
+
 VAR
 
     word _cal_data[6]
@@ -110,7 +121,7 @@ PUB IRChan(enabled) | tmp
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
-PUB IRLight
+PUB IRData
 ' Return data from infra-red light channel
     readReg (core#ALS_IR_DATA0, 2, @result)
 
@@ -130,8 +141,22 @@ PUB MeasureRate(usec) | tmp
 
     writeReg(core#MEAS_RATE0, 2, @usec)
 
+PUB OpMode(mode)
+' Set operation mode
+'   Valid values:
+'       ONE_PS, ONE_ALS, ONE_PSALS: Force a single PS, ALS or PS+ALS measurement
+'       CONT_PS, CONT_ALS, CONT_PSALS: Start continuous PS, ALS, or PS+ALS measurement
+'       PAUSE_PS, PAUSE_ALS, PAUSE_PSALS: Pause a running continuous measurement
+'   Any other value is ignored
+    case mode
+        ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS, PAUSE_ALS, PAUSE_PSALS:
+        OTHER:
+            return
+
+    result := command (mode, 0, 0)
+
 PUB ReadCalData
-' Read calibration data into 6-word array at buff_addr
+' Read calibration data into 6-word array
     command (core#CMD_GET_CAL, 0, 0)
     readReg (core#CAL_DATA, 12, @_cal_data)
 
@@ -209,7 +234,7 @@ PUB VisibleChan(enabled) | tmp
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
-PUB VisibleLight
+PUB VisibleData
 ' Return data from visible light channel
     readReg (core#ALS_VIS_DATA0, 2, @result)
 
