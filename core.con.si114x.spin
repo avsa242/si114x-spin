@@ -51,9 +51,13 @@ CON
         BITS_LED3_I             = %1111
 
     UCOEF0                      = $13
+        UCOEF0_DEF              = $7B
     UCOEF1                      = $14
+        UCOEF1_DEF              = $6B
     UCOEF2                      = $15
+        UCOEF2_DEF              = $01
     UCOEF3                      = $16
+        UCOEF3_DEF              = $00
 
     PARAM_WR                    = $17
     COMMAND                     = $18

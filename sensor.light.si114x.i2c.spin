@@ -40,6 +40,7 @@ CON
 VAR
 
     word _cal_data[6]
+    byte _opmode
 
 OBJ
 
@@ -62,7 +63,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
                 time.MSleep (25)
                 if i2c.present (SLAVE_WR)                       'Response from device?
                     if lookdown(DeviceID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
-                        HWKey
+                        Reset
                         return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -173,11 +174,14 @@ PUB OpMode(mode)
 '       ONE_PS, ONE_ALS, ONE_PSALS: Force a single PS, ALS or PS+ALS measurement
 '       CONT_PS, CONT_ALS, CONT_PSALS: Start continuous PS, ALS, or PS+ALS measurement
 '       PAUSE_PS, PAUSE_ALS, PAUSE_PSALS: Pause a running continuous measurement
-'   Any other value is ignored
+'   Valid values return response status from chip
+'   Any other value returns the last setting (shadow register)
     case mode
         ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS, PAUSE_ALS, PAUSE_PSALS:
+            _opmode := mode
         OTHER:
-            return
+            return _opmode                  ' No way to read measurement mode from sensor, so maintain state
+                                            ' in a shadow register
 
     result := command (mode, 0, 0)
 
@@ -191,6 +195,7 @@ PUB Reset
     command (core#CMD_RESET, 0, 0)
     time.MSleep(1)
     HWKey
+    OpMode (ONE_PSALS)
 
 PUB RevID
 ' Revision
