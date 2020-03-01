@@ -125,6 +125,12 @@ PUB IRData
 ' Return data from infra-red light channel
     readReg (core#ALS_IR_DATA0, 2, @result)
 
+PUB IROverflow
+' Flag indicating infra-red light data conversion has overflowed
+'   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
+    readReg (core#RESPONSE, 1, @result)
+    return (result == core#RSP_ALS_IR_ADC_OVERFLOW)
+
 PUB MeasureRate(usec) | tmp
 ' Set time duration between measurements, in microseconds
 '   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
@@ -132,7 +138,7 @@ PUB MeasureRate(usec) | tmp
     tmp := $0000
     readReg(core#MEAS_RATE0, 2, @tmp)
     case usec
-        31..2047969:                        ' 31.25uS .. 2047969.75uS, truncated
+        31..2047969:                        ' 31.25uS .. 2047968.75uS, rounded
             usec *= 1_00                    ' Scaling, to preseve accuracy
             usec /= 31_25
         OTHER:
@@ -218,6 +224,10 @@ PUB UVChan(enabled) | tmp
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
+PUB UVData | tmp
+' Return data from UV index channel
+    readReg (core#AUX_DATA0, 2, @result)
+
 PUB VisibleChan(enabled) | tmp
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
@@ -237,6 +247,12 @@ PUB VisibleChan(enabled) | tmp
 PUB VisibleData
 ' Return data from visible light channel
     readReg (core#ALS_VIS_DATA0, 2, @result)
+
+PUB VisibleOverflow
+' Flag indicating visible light data conversion has overflowed
+'   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
+    readReg (core#RESPONSE, 1, @result)
+    return (result == core#RSP_ALS_VIS_ADC_OVERFLOW)
 
 PRI command(cmd, param, args) | tmp
 
