@@ -21,7 +21,7 @@ CON
 
     I2C_SCL     = 28
     I2C_SDA     = 29
-    I2C_HZ      = 400_000
+    I2C_HZ      = 1_000_000                     ' max is 3_400_000
 ' --
 
     TEXT_COL    = 0
@@ -29,49 +29,24 @@ CON
 
     ROW         = 10
 
+    R           = si#R                          ' read/write constants
+    W           = si#W                          ' for UVCoefficients()
+
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
-    io      : "io"
     int     : "string.integer"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     si      : "sensor.light.si114x.i2c"
 
-PUB Main | opmode, tmp, uvi
+PUB Main{}
 
-    Setup
+    setup{}
 
-    si.reset
-    si.uvcoefficients(1, $00_01_6B_7B)
-    si.auxchan(FALSE)
-    si.uvchan(TRUE)
-    si.irchan(FALSE)
-    si.visiblechan(FALSE)
-
-    si.irrange(si#HIGH)
-    si.visiblerange(si#HIGH)
-
-    si.irgain(1)                                        ' 1, 16, 64, 128 (gain factor)
-    si.visiblegain(1)                                   ' 1, 16, 64, 128 (gain factor)
-    si.measurerate(8000)                                ' 31..2047969 (uSec delay between measurements)
-    tmp := si.opmode(si#CONT_PSALS)
-                                                        ' ONE_PS, ONE_ALS, ONE_PSALS
-                                                        ' CONT_PS, CONT_ALS, CONT_PSALS
-                                                        ' ONE = One-shot measurement mode
-                                                        ' CONT = Continuous measurement mode
-                                                        ' PS = Proximity Sensor
-                                                        ' ALS = Ambient Light Sensor
+    si.presetuvi{}
 
     repeat
-        case opmode := si.OpMode(-2)
-            si#ONE_PS, si#ONE_ALS, si#ONE_PSALS:        ' One-shot mode
-                si.OpMode(opmode)
-
-            si#CONT_PS, si#CONT_ALS, si#CONT_PSALS, si#PAUSE_PS, si#PAUSE_ALS, si#PAUSE_PSALS:
-                                                        ' Continuous-measurement mode
-            OTHER:                                      ' Exception - should never reach this state
-
         uvcalc{}
 
 PUB UVCalc{} | uvi
@@ -82,9 +57,6 @@ PUB UVCalc{} | uvi
     ser.str(string("UV Index: "))
     ser.position(DATA_COL, ROW)
     decimal(uvi, 100)
-
-PUB UVRaw{} | uvi
-
 
 PUB Decimal(scaled, divisor) | whole[4], part[4], places, tmp
 ' Display a fixed-point scaled up number in decimal-dot notation - scale it back down by divisor

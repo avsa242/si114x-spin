@@ -41,6 +41,10 @@ CON
     NORMAL                  = $00
     HIGH                    = $20
 
+' Read/write for UVCoeffecients()
+    R                       = 0
+    W                       = 1
+
 VAR
 
     word _cal_data[6]
@@ -76,6 +80,48 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
 PUB Stop{}
 
     i2c.terminate{}
+
+PUB Defaults{}
+' Factory default settings
+    reset{}
+
+PUB PresetALS{}
+' Preset settings for ambient light sension mode
+    reset{}                                     ' start with POR defaults
+    opmode(CONT_ALS)
+
+    auxchan(FALSE)
+    uvchan(FALSE)
+    irchan(TRUE)
+    visiblechan(TRUE)
+
+PUB PresetProx{}
+' Preset settings for proximity sensor mode
+    reset{}
+    opmode(CONT_PS)
+
+    ' XXX fill in
+
+PUB PresetUVI{}
+' Preset settings for measuring UV Index
+    reset{}
+    opmode(CONT_ALS)
+
+    ' These are the factory default part-to-part variance coefficients.
+    ' They are restored by calling Reset(), but show them here so the user
+    '   doesn't have to look far for them.
+    uvcoefficients(W, $00_01_6B_7B)
+
+    auxchan(FALSE)
+    uvchan(TRUE)
+    irchan(FALSE)
+    visiblechan(FALSE)
+
+    irrange(HIGH)
+    visiblerange(HIGH)
+
+    irgain(1)
+    visiblegain(1)
 
 PUB AUXChan(state): curr_state
 ' Enable the auxiliary source data channel
