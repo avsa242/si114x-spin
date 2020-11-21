@@ -168,21 +168,20 @@ PUB IRRange(range): curr_rng
     range &= core#ALS_IR_ADC_MISC_MASK
     command(core#CMD_PARAM_SET, core#ALS_IR_ADC_MISC, range)
 
-PUB MeasureRate(usec) | tmp
+PUB MeasureRate(rate): curr_rate
 ' Set time duration between measurements, in microseconds
 '   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
 '   Any other value polls the chip and returns the current setting
-    tmp := $0000
-    readReg(core#MEAS_RATE0, 2, @tmp)
-    case usec
-        31..2047969:                        ' 31.25uS .. 2047968.75uS, rounded
-            usec *= 1_00                    ' Scaling, to preseve accuracy
-            usec /= 31_25
+    curr_rate := $0000
+    readReg(core#MEAS_RATE0, 2, @curr_rate)
+    case rate
+        31..2047969:                            ' 31.25uS..2047968.75uS
+            rate *= 1_00                        ' Scaling, to preseve accuracy
+            rate /= 31_25
         OTHER:
-            result := (tmp * 31_25) / 100   ' Scaling, to preserve accuracy
-            return
+            return (curr_rate * 31_25) / 100
 
-    writeReg(core#MEAS_RATE0, 2, @usec)
+    writeReg(core#MEAS_RATE0, 2, @rate)
 
 PUB OpMode(mode)
 ' Set operation mode
