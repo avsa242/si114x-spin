@@ -123,29 +123,30 @@ PUB IRChan(state): curr_state
     state := ((curr_state & core#EN_ALS_IR_MASK) | state) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB IRData
+PUB IRData{}: ir_adc
 ' Return data from infra-red light channel
-    readReg (core#ALS_IR_DATA0, 2, @result)
+    readReg (core#ALS_IR_DATA0, 2, @ir_adc)
 
-PUB IRGain(gain) | tmp
+PUB IRGain(gain): curr_gain
 ' Gain factor of infra-red light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    tmp := command (core#CMD_PARAM_QUERY, core#ALS_IR_ADC_GAIN, 0)
+    curr_gain := 0
+    curr_gain := command(core#CMD_PARAM_QUERY, core#ALS_IR_ADC_GAIN, 0)
     case gain
         1: gain := %000
         16: gain := %100
         64: gain := %110
         128: gain := %111
         OTHER:
-            result := lookupz(tmp & core#ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
-            return
+            return lookupz(curr_gain & core#ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0,{
+            } 16, 0, 64, 128)
 
-    command (core#CMD_PARAM_SET, core#ALS_IR_ADCGAIN, gain)
-    gain <<= core#IR_ADC_REC                                   ' Set the one's complement of the gain val
-    command (core#CMD_PARAM_SET, core#ALS_IR_ADC_COUNTER, !gain)   ' to ADC recovery period, per datasheet
-
+    command(core#CMD_PARAM_SET, core#ALS_IR_ADCGAIN, gain)
+    gain <<= core#IR_ADC_REC
+    ' Set the one's complement of the gain val
+    ' to ADC recovery period, per datasheet
+    command(core#CMD_PARAM_SET, core#ALS_IR_ADC_COUNTER, !gain)
 
 PUB IROverflow
 ' Flag indicating infra-red light data conversion has overflowed
