@@ -5,7 +5,7 @@
     Description: Demo of the Si114x driver
     Copyright (c) 2020
     Started Feb 29, 2020
-    Updated Mar 1, 2020
+    Updated Nov 20, 2020
     See end of file for terms of use.
     --------------------------------------------
 }

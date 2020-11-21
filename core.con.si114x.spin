@@ -3,9 +3,9 @@
     Filename: core.con.si114x.spin
     Author: Jesse Burt
     Description: Low-level constants
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Jun 01, 2019
-    Updated Jun 01, 2019
+    Updated Nov 21, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -26,13 +26,13 @@ CON
         SEQ_ID_RESP             = $08
 
     INT_CFG                     = $03
-        FLD_INT_OE              = 0
+        INT_OE                  = 0
 
     IRQ_ENABLE                  = $04
-        FLD_ALS_IE              = 0
-        FLD_PS1_IE              = 2
-        FLD_PS2_IE              = 3
-        FLD_PS3_IE              = 4
+        PS3_IE                  = 4
+        PS2_IE                  = 3
+        PS1_IE                  = 2
+        ALS_IE                  = 0
 
     HW_KEY                      = $07
         HW_KEY_EXPECTED         = $17
@@ -41,14 +41,14 @@ CON
     MEAS_RATE1                  = $09
 
     PS_LED21                    = $0F
-        FLD_LED1_I              = 0
-        FLD_LED2_I              = 4
-        BITS_LED1_LI            = %1111
-        BITS_LED2_LI            = %1111
+        LED2_I                  = 4
+        LED1_I                  = 0
+        LED2_LI_BITS            = %1111
+        LED1_LI_BITS            = %1111
 
     PS_LED3                     = $10
-        FLD_LED3_I              = 0
-        BITS_LED3_I             = %1111
+        LED3_I                  = 0
+        LED3_I_BITS             = %1111
 
     UCOEF0                      = $13
         UCOEF0_DEF              = $7B
@@ -64,12 +64,12 @@ CON
     RESPONSE                    = $20
 
     IRQ_STATUS                  = $21
-        FLD_ALS_INT             = 0
-        FLD_PS1_INT             = 2
-        FLD_PS2_INT             = 3
-        FLD_PS3_INT             = 4
-        FLD_CMD_INT             = 5
-        BITS_ALS_INT            = %11
+        CMD_INT                 = 5
+        PS3_INT                 = 4
+        PS2_INT                 = 3
+        PS1_INT                 = 2
+        ALS_INT                 = 0
+        ALS_INT_BITS            = %11
 
     CAL_DATA                    = $22   '..$2D
     CAL_DATA_LEN                = 11
@@ -136,51 +136,51 @@ CON
 
     CHLIST                      = $01
     CHLIST_MASK                 = $F7
-        FLD_EN_PS1              = 0
-        FLD_EN_PS2              = 1
-        FLD_EN_PS3              = 2
-        FLD_EN_ALS_VIS          = 4
-        FLD_EN_ALS_IR           = 5
-        FLD_EN_AUX              = 6
-        FLD_EN_UV               = 7
-        MASK_EN_PS1             = CHLIST_MASK ^ (1 << FLD_EN_PS1)
-        MASK_EN_PS2             = CHLIST_MASK ^ (1 << FLD_EN_PS2)
-        MASK_EN_PS3             = CHLIST_MASK ^ (1 << FLD_EN_PS3)
-        MASK_EN_ALS_VIS         = CHLIST_MASK ^ (1 << FLD_EN_ALS_VIS)
-        MASK_EN_ALS_IR          = CHLIST_MASK ^ (1 << FLD_EN_ALS_IR)
-        MASK_EN_AUX             = CHLIST_MASK ^ (1 << FLD_EN_AUX)
-        MASK_EN_UV              = CHLIST_MASK ^ (1 << FLD_EN_UV)
+        EN_UV                   = 7
+        EN_AUX                  = 6
+        EN_ALS_IR               = 5
+        EN_ALS_VIS              = 4
+        EN_PS3                  = 2
+        EN_PS2                  = 1
+        EN_PS1                  = 0
+        EN_UV_MASK              = (1 << EN_UV) ^ CHLIST_MASK
+        EN_AUX_MASK             = (1 << EN_AUX) ^ CHLIST_MASK
+        EN_ALS_IR_MASK          = (1 << EN_ALS_IR) ^ CHLIST_MASK
+        EN_ALS_VIS_MASK         = (1 << EN_ALS_VIS) ^ CHLIST_MASK
+        EN_PS3_MASK             = (1 << EN_PS3) ^ CHLIST_MASK
+        EN_PS2_MASK             = (1 << EN_PS2) ^ CHLIST_MASK
+        EN_PS1_MASK             = (1 << EN_PS1) ^ CHLIST_MASK
 
 
     PSLED12_SELECT              = $02
     PSLED12_SELECT_MASK         = $77
-        FLD_PS1_LED             = 0
-        FLD_PS2_LED             = 4
-        BITS_PS1_LED            = %111
-        BITS_PS2_LED            = %111
-        MASK_PS1_LED            = PSLED12_SELECT_MASK ^ (BITS_PS1_LED << FLD_PS1_LED)
-        MASK_PS2_LED            = PSLED12_SELECT_MASK ^ (BITS_PS2_LED << FLD_PS2_LED)
+        PS2_LED                 = 4
+        PS1_LED                 = 0
+        PS2_LED_BITS            = %111
+        PS1_LED_BITS            = %111
+        PS2_LED_MASK            = (PS2_LED << PS2_LED) ^ PSLED12_SELECT_MASK
+        PS1_LED_MASK            = (PS1_LED << PS1_LED) ^ PSLED12_SELECT_MASK
 
     PSLED3_SELECT               = $03
     PSLED3_SELECT_MASK          = $07
-        FLD_PS3_LED             = 0
-        BITS_PS3_LED            = %111
+        PS3_LED                 = 0
+        PS3_LED_BITS            = %111
 
     PS_ENCODING                 = $05
     PS_ENCODING_MASK            = $70
-        FLD_PS1_ALIGN           = 4
-        FLD_PS2_ALIGN           = 5
-        FLD_PS3_ALIGN           = 6
-        MASK_PS1_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS1_ALIGN)
-        MASK_PS2_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS2_ALIGN)
-        MASK_PS3_ALIGN          = PS_ENCODING_MASK ^ (1 << FLD_PS3_ALIGN)
+        PS3_ALIGN               = 6
+        PS2_ALIGN               = 5
+        PS1_ALIGN               = 4
+        PS3_ALIGN_MASK          = (1 << PS3_ALIGN) ^ PS_ENCODING_MASK
+        PS2_ALIGN_MASK          = (1 << PS2_ALIGN) ^ PS_ENCODING_MASK
+        PS1_ALIGN_MASK          = (1 << PS1_ALIGN) ^ PS_ENCODING_MASK
 
     ALS_ENCODING                = $06
     ALS_ENCODING_MASK           = $30
-        FLD_ALS_VIS_ALIGN       = 4
-        FLD_ALS_IR_ALIGN        = 5
-        MASK_ALS_VIS_ALIGN      = ALS_ENCODING_MASK ^ (1 << FLD_ALS_VIS_ALIGN)
-        MASK_ALS_IR_ALIGN       = ALS_ENCODING_MASK ^ (1 << FLD_ALS_IR_ALIGN)
+        ALS_IR_ALIGN            = 5
+        ALS_VIS_ALIGN           = 4
+        ALS_IR_ALIGN_MASK       = (1 << ALS_IR_ALIGN) ^ ALS_ENCODING_MASK
+        ALS_VIS_ALIGN_MASK      = (1 << ALS_VIS_ALIGN) ^ ALS_ENCODING_MASK
 
     PS1_ADCMUX                  = $07
     PS2_ADCMUX                  = $08
@@ -188,20 +188,20 @@ CON
 
     PS_ADC_COUNTER              = $0A
     PS_ADC_COUNTER_MASK         = $70
-        FLD_PS_ADC_REC          = 4
-        BITS_PS_ADC_REC         = %111
+        PS_ADC_REC              = 4
+        PS_ADC_REC_BITS         = %111
 
     PS_ADC_GAIN                 = $0B
     PS_ADC_GAIN_MASK            = $07
-        FLD_PS_ADC_GAIN         = 0
-        BITS_PS_ADC_GAIN        = %111
+        PS_ADCGAIN              = 0
+        PS_ADCGAIN_BITS         = %111
 
     PS_ADC_MISC                 = $0C
     PS_ADC_MISC_MASK            = $22
-        FLD_PS_ADC_MODE         = 2
-        FLD_PS_RANGE            = 5
-        MASK_PS_ADC_MODE        = PS_ADC_MISC_MASK ^ (1 << FLD_PS_ADC_MODE)
-        MASK_PS_RANGE           = PS_ADC_MISC_MASK ^ (1 << FLD_PS_RANGE)
+        PS_RANGE                = 5
+        PS_ADC_MODE             = 2
+        PS_RANGE_MASK           = (1 << PS_RANGE) ^ PS_ADC_MISC_MASK
+        PS_ADC_MODE_MASK        = (1 << PS_ADC_MODE) ^ PS_ADC_MISC_MASK
 
     ALS_IR_ADCMUX               = $0E
 
@@ -211,33 +211,56 @@ CON
 
     ALS_VIS_ADC_COUNTER         = $10
     ALS_VIS_ADC_COUNTER_MASK    = $70
-            FLD_VIS_ADC_REC     = 4
-            BITS_VIS_ADC_REC    = %111
+            VIS_ADC_REC         = 4
+            VIS_ADC_REC_BITS    = %111
 
     ALS_VIS_ADC_GAIN            = $11
     ALS_VIS_ADC_GAIN_MASK       = $07
-        FLD_ALS_VIS_ADC_GAIN    = 0
-        BITS_ALS_VIS_ADC_GAIN   = %111
+        ALS_VIS_ADCGAIN         = 0
+        ALS_VIS_ADCGAIN_BITS    = %111
 
     ALS_VIS_ADC_MISC            = $12
     ALS_VIS_ADC_MISC_MASK       = $20
-        FLD_VIS_RANGE           = 5
+        VIS_RANGE               = 5
 
     LED_REC                     = $1C
 
     ALS_IR_ADC_COUNTER          = $1D
     ALS_IR_ADC_COUNTER_MASK     = $70
-        FLD_IR_ADC_REC          = 4
-        BITS_IR_ADC_REC         = %111
+        IR_ADC_REC              = 4
+        IR_ADC_REC_BITS         = %111
 
     ALS_IR_ADC_GAIN             = $1E
     ALS_IR_ADC_GAIN_MASK        = $07
-        FLD_ALS_IR_ADC_GAIN     = 0
-        BITS_ALS_IR_ADC_GAIN    = %111
+        ALS_IR_ADCGAIN          = 0
+        ALS_IR_ADCGAIN_BITS     = %111
 
     ALS_IR_ADC_MISC             = $1F
     ALS_IR_ADC_MISC_MASK        = $20
-        FLD_IR_RANGE            = 5
+        IR_RANGE                = 5
 
-PUB Null
-'' This is not a top-level object
+PUB Null{}
+' This is not a top-level object
+
+DAT
+{
+    --------------------------------------------------------------------------------------------------------
+    TERMS OF USE: MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+    associated documentation files (the "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+    following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial
+    portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+    LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    --------------------------------------------------------------------------------------------------------
+}
+

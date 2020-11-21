@@ -6,7 +6,7 @@
         Proximity/UV/Amblient light sensor IC
     Copyright (c) 2020
     Started Jun 01, 2019
-    Updated Feb 29, 2020
+    Updated Nov 21, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -84,12 +84,12 @@ PUB AUXChan(enabled) | tmp
     tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
-            enabled := (||enabled) << core#FLD_EN_AUX
+            enabled := (||enabled) << core#EN_AUX
         OTHER:
-            result := ((tmp >> core#FLD_EN_AUX) & %1) * TRUE
+            result := ((tmp >> core#EN_AUX) & %1) * TRUE
             return result
 
-    tmp &= core#MASK_EN_AUX
+    tmp &= core#EN_AUX_MASK
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
@@ -118,12 +118,12 @@ PUB IRChan(enabled) | tmp
     tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
-            enabled := (||enabled) << core#FLD_EN_ALS_IR
+            enabled := (||enabled) << core#EN_ALS_IR
         OTHER:
-            result := ((tmp >> core#FLD_EN_ALS_IR) & %1) * TRUE
+            result := ((tmp >> core#EN_ALS_IR) & %1) * TRUE
             return result
 
-    tmp &= core#MASK_EN_ALS_IR
+    tmp &= core#EN_ALS_IR_MASK
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
@@ -143,11 +143,11 @@ PUB IRGain(gain) | tmp
         64: gain := %110
         128: gain := %111
         OTHER:
-            result := lookupz(tmp & core#BITS_ALS_IR_ADC_GAIN: 1, 0, 0, 0, 16, 0, 64, 128)
+            result := lookupz(tmp & core#ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
             return
 
-    command (core#CMD_PARAM_SET, core#ALS_IR_ADC_GAIN, gain)
-    gain <<= core#FLD_IR_ADC_REC                                   ' Set the one's complement of the gain val
+    command (core#CMD_PARAM_SET, core#ALS_IR_ADCGAIN, gain)
+    gain <<= core#IR_ADC_REC                                   ' Set the one's complement of the gain val
     command (core#CMD_PARAM_SET, core#ALS_IR_ADC_COUNTER, !gain)   ' to ADC recovery period, per datasheet
 
 
@@ -261,12 +261,12 @@ PUB UVChan(enabled) | tmp
     tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
-            enabled := (||enabled) << core#FLD_EN_UV
+            enabled := (||enabled) << core#EN_UV
         OTHER:
-            result := ((tmp >> core#FLD_EN_UV) & %1) * TRUE
+            result := ((tmp >> core#EN_UV) & %1) * TRUE
             return result
 
-    tmp &= core#MASK_EN_UV
+    tmp &= core#EN_UV_MASK
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
@@ -295,12 +295,12 @@ PUB VisibleChan(enabled) | tmp
     tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||enabled
         0, 1:
-            enabled := (||enabled) << core#FLD_EN_ALS_VIS
+            enabled := (||enabled) << core#EN_ALS_VIS
         OTHER:
-            result := ((tmp >> core#FLD_EN_ALS_VIS) & %1) * TRUE
+            result := ((tmp >> core#EN_ALS_VIS) & %1) * TRUE
             return result
 
-    tmp &= core#MASK_EN_ALS_VIS
+    tmp &= core#EN_ALS_VIS_MASK
     tmp := (tmp | enabled) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, tmp)
 
@@ -320,11 +320,11 @@ PUB VisibleGain(gain) | tmp
         64: gain := %110
         128: gain := %111
         OTHER:
-            result := lookupz(tmp & core#BITS_ALS_VIS_ADC_GAIN: 1, 0, 0, 0, 16, 0, 64, 128)
+            result := lookupz(tmp & core#ALS_VIS_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
             return
 
-    command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_GAIN, gain)
-    gain <<= core#FLD_VIS_ADC_REC                                   ' Set the one's complement of the gain val
+    command (core#CMD_PARAM_SET, core#ALS_VIS_ADCGAIN, gain)
+    gain <<= core#VIS_ADC_REC                                   ' Set the one's complement of the gain val
     command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)   ' to ADC recovery period, per datasheet
 
 PUB VisibleOverflow
