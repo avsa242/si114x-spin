@@ -39,16 +39,18 @@ P1/SPIN1:
 * Doesn't support interrupts
 * Doesn't support alternate slave address usage/programming
 * Doesn't support temp sensor/Vdd/Vss reading (not currently planned)
+* Measurement calibration/correction/calculation unverified
 
 ## TODO
 
-- [x] Verify reading of ambient light and IR measurements
-- [ ] Verify reading of UV Index measurement
+- [ ] Verify ambient light and IR measurements
+- [ ] Verify UV Index measurements
 - [ ] Cleanup RAM parameter API
 - [x] Implement measure rate
 - [ ] Implement IR LED current setting
 - [ ] Implement interrupt status methods
 - [x] Implement methods to enable/disable individual data channels
 - [ ] Implement alternate slave address support
+- [ ] Implement support for reading individual sensor factory-programmed coefficients
 - [ ] Update API for consistency with other drivers
 - [ ] Port to P2/SPIN2

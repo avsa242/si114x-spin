@@ -15,6 +15,8 @@ CON
     I2C_MAX_FREQ                = 3_400_000
     SLAVE_ADDR                  = $60 << 1
 
+    T_POR                       = 25_000        ' usec
+
 ' Register definitions
     PART_ID                     = $00
         PART_ID_RESP_1145       = $45

@@ -68,7 +68,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
     if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31)
         if I2C_HZ =< core#I2C_MAX_FREQ
             if okay := i2c.setupx(SCL_PIN, SDA_PIN, I2C_HZ)
-                time.msleep(25)
+                time.usleep(core#T_POR)
                 if i2c.present(SLAVE_WR)        ' check device bus presence
                     if lookdown(deviceid{}: core#PART_ID_RESP_1145,{
                     } core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
@@ -249,6 +249,7 @@ PUB OpMode(mode): curr_mode
 
 PUB ReadCalData{}
 ' Read calibration data into 6-word array
+    wordfill(@_cal_data, 0, 6)
     command(core#CMD_GET_CAL, 0, 0)
     readreg(core#CAL_DATA, 12, @_cal_data)
 
