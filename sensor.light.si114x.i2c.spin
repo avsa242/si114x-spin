@@ -324,25 +324,25 @@ PUB VisibleGain(gain): curr_gain
     ' to ADC recovery period, per datasheet
     command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)
 
-PUB VisibleOverflow
+PUB VisibleOverflow{}: flag
 ' Flag indicating visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
-    readReg (core#RESPONSE, 1, @result)
-    return (result == core#RSP_ALS_VIS_ADC_OVERFLOW)
+    readreg(core#RESPONSE, 1, @flag)
+    return (flag == core#RSP_ALS_VIS_ADC_OVERFLOW)
 
-PUB VisibleRange(range) | tmp
+PUB VisibleRange(range): curr_rng
 ' Set measurement range of visible light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)
-    tmp := $00
-    tmp := command (core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_MISC, 0)
+    curr_rng := 0
+    curr_rng := command(core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_MISC, 0)
     case range
         NORMAL, HIGH:
         OTHER:
-            return tmp
+            return curr_rng
 
-    return command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_MISC, range)
+    command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_MISC, range)
 
 PRI command(cmd, param, args) | tmp
 
