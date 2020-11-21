@@ -101,29 +101,27 @@ PUB CalData(cal_word)
         OTHER:
             return
 
-PUB DeviceID
+PUB DeviceID{}: id
 ' Part ID of sensor
 '   Returns:
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
-    readReg (core#PART_ID, 1, @result)
+    readReg (core#PART_ID, 1, @id)
 
-PUB IRChan(enabled) | tmp
+PUB IRChan(state): curr_state
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
-    case ||enabled
+    curr_state := command(core#CMD_PARAM_QUERY, core#CHLIST, 0)
+    case ||(state)
         0, 1:
-            enabled := (||enabled) << core#EN_ALS_IR
+            state := ||(state) << core#EN_ALS_IR
         OTHER:
-            result := ((tmp >> core#EN_ALS_IR) & %1) * TRUE
-            return result
+            return ((curr_state >> core#EN_ALS_IR) & %1) == 1
 
-    tmp &= core#EN_ALS_IR_MASK
-    tmp := (tmp | enabled) & core#CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
+    state := ((curr_state & core#EN_ALS_IR_MASK) | state) & core#CHLIST_MASK
+    command (core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB IRData
 ' Return data from infra-red light channel
