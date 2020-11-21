@@ -15,21 +15,19 @@ CON
     _clkmode    = cfg#_clkmode
     _xinfreq    = cfg#_xinfreq
 
-    SER_RX      = 31
-    SER_TX      = 30
+' -- User-modifiable constants
     SER_BAUD    = 115_200
     LED         = cfg#LED1
 
     I2C_SCL     = 28
     I2C_SDA     = 29
     I2C_HZ      = 400_000
+' --
 
     TEXT_COL    = 0
     DATA_COL    = TEXT_COL+30
-    BOOL        = 1
-    BIN         = 2
-    DEC         = 10
-    HEX         = 16
+
+    ROW         = 10
 
 OBJ
 
@@ -40,28 +38,24 @@ OBJ
     time    : "time"
     si      : "sensor.light.si114x.i2c"
 
-VAR
-
-    byte _ser_cog, _si_cog, _row
-
 PUB Main | opmode, tmp, uvi
 
     Setup
 
-    si.Reset
-    si.UVCoefficients(1, $00_01_6B_7B)
-    si.AUXChan(FALSE)
-    si.UVChan(TRUE)
-    si.IRChan(FALSE)
-    si.VisibleChan(FALSE)
+    si.reset
+    si.uvcoefficients(1, $00_01_6B_7B)
+    si.auxchan(FALSE)
+    si.uvchan(TRUE)
+    si.irchan(FALSE)
+    si.visiblechan(FALSE)
 
-    si.IRRange(si#HIGH)
-    si.VisibleRange(si#HIGH)
+    si.irrange(si#HIGH)
+    si.visiblerange(si#HIGH)
 
-    si.IRGain(1)                                        ' 1, 16, 64, 128 (gain factor)
-    si.VisibleGain(1)                                   ' 1, 16, 64, 128 (gain factor)
-    si.MeasureRate(8000)                                ' 31..2047969 (uSec delay between measurements)
-    tmp := si.OpMode(si#CONT_PSALS)
+    si.irgain(1)                                        ' 1, 16, 64, 128 (gain factor)
+    si.visiblegain(1)                                   ' 1, 16, 64, 128 (gain factor)
+    si.measurerate(8000)                                ' 31..2047969 (uSec delay between measurements)
+    tmp := si.opmode(si#CONT_PSALS)
                                                         ' ONE_PS, ONE_ALS, ONE_PSALS
                                                         ' CONT_PS, CONT_ALS, CONT_PSALS
                                                         ' ONE = One-shot measurement mode
@@ -69,10 +63,7 @@ PUB Main | opmode, tmp, uvi
                                                         ' PS = Proximity Sensor
                                                         ' ALS = Ambient Light Sensor
 
-    Datum(3, string("Measure rate delay:"), si.MeasureRate(-2), 10, 0, string("uS"))
-
     repeat
-        _row := 6
         case opmode := si.OpMode(-2)
             si#ONE_PS, si#ONE_ALS, si#ONE_PSALS:        ' One-shot mode
                 si.OpMode(opmode)
@@ -80,52 +71,20 @@ PUB Main | opmode, tmp, uvi
             si#CONT_PS, si#CONT_ALS, si#CONT_PSALS, si#PAUSE_PS, si#PAUSE_ALS, si#PAUSE_PSALS:
                                                         ' Continuous-measurement mode
             OTHER:                                      ' Exception - should never reach this state
-                ser.Position(TEXT_COL, 20)
-                ser.str(string("Exception error: unable to determine sensor operation mode - halting"))
-                Stop
-                FlashLED(LED, 500)
 
-        Datum(_row++, string("Status: "), si.Status, BIN, 3, 0)
-        Datum(_row++, string("UV: "), uvi := si.UVData, HEX, 4, 0)
-        Datum(_row++, string("IR: "), si.IRData, HEX, 4, 0)
-        Datum(_row++, string("Visible: "), si.VisibleData, HEX, 4, 0)
-        Datum(_row++, string("IR overflow?: "), si.IROverflow, BOOL, 0, 0)
-        Datum(_row++, string("Visible overflow?: "), si.VisibleOverflow, BOOL, 0, 0)
+        uvcalc{}
 
-        ser.Position(TEXT_COL, _row+=2)
-        ser.Str(string("UV Index: "))
-        ser.Position(DATA_COL, _row)
-        Frac(uvi, 100)
+PUB UVCalc{} | uvi
 
-    FlashLED (LED, 100)
+    uvi := si.uvdata{}
 
-PUB Datum(ypos, ptr_msg, data, data_base, digits, ptr_unit)
-' Display annotated data
-'   ypos: Terminal y-position/row to display data
-'   ptr_msg: Pointer to annotation string
-'   data: Datum to display
-'   data_base: Number base used to display data (BIN/2, DEC/10, HEX/16)
-'   digits: Number of digits used to display data
-'   ptr_unit: Optional pointer to unit or other string text to postfix to row (e.g., uS). 0 to disable
-    ser.Position(TEXT_COL, ypos)
-    ser.Str(ptr_msg)
+    ser.position(TEXT_COL, ROW)
+    ser.str(string("UV Index: "))
+    ser.position(DATA_COL, ROW)
+    decimal(uvi, 100)
 
-    ser.Position(DATA_COL, ypos)
-    case data_base
-        BOOL:
-            case data
-                0:
-                    ser.str(string("FALSE"))
-                OTHER:
-                    ser.str(string("TRUE "))
-        BIN:
-            ser.Bin(data, digits)
-        DEC:
-            ser.Str(int.DecPadded(data, digits))
-        HEX:
-            ser.Hex(data, digits)
-    if ptr_unit
-        ser.str(ptr_unit)
+PUB UVRaw{} | uvi
+
 
 PUB Decimal(scaled, divisor) | whole[4], part[4], places, tmp
 ' Display a fixed-point scaled up number in decimal-dot notation - scale it back down by divisor
@@ -140,38 +99,31 @@ PUB Decimal(scaled, divisor) | whole[4], part[4], places, tmp
         tmp /= 10
         places++
     until tmp == 1
-    part := int.DecZeroed(||(scaled // divisor), places)
+    part := int.deczeroed(||(scaled // divisor), places)
 
-    ser.Dec (whole)
-    ser.Char (".")
-    ser.Str (part)
+    ser.dec(whole)
+    ser.char(".")
+    ser.str(part)
 
-PUB Setup
+PUB Setup{}
 
-    repeat until _ser_cog := ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
-    time.MSleep(30)
-    ser.Clear
-    ser.Str(string("Serial terminal started", ser#CR, ser#LF))
-    if _si_cog := si.Startx(I2C_SCL, I2C_SDA, I2C_HZ)
-        ser.Str(string("SI114x driver started (Si11"))
-        ser.Hex (si.DeviceID, 2)
-        ser.Str (string(" rev "))
-        ser.Hex (si.RevID, 2)
-        ser.Str (string(", sequencer rev "))
-        ser.Hex (si.SeqID, 2)
-        ser.Str (string(" found)", ser#CR, ser#LF))
+    ser.start(SER_BAUD)
+    time.msleep(30)
+    ser.clear{}
+    ser.strln(string("Serial terminal started"))
+    if si.startx(I2C_SCL, I2C_SDA, I2C_HZ)
+        ser.str(string("SI114x driver started (Si11"))
+        ser.hex(si.deviceid{}, 2)
+        ser.str(string(" rev "))
+        ser.hex(si.revid{}, 2)
+        ser.str(string(", sequencer rev "))
+        ser.hex(si.seqid{}, 2)
+        ser.strln(string(" found)"))
     else
-        ser.Str(string("SI114x driver failed to start - halting", ser#CR, ser#LF))
-        Stop
-        FlashLED (LED, 500)
-
-PUB Stop
-
-    time.MSleep (5)
-    ser.Stop
-    si.Stop
-
-#include "lib.utility.spin"
+        ser.strln(string("SI114x driver failed to start - halting"))
+        time.MSleep (5)
+        ser.Stop
+        si.Stop
 
 DAT
 {
