@@ -253,21 +253,19 @@ PUB Suspended{}: flag
     readreg(core#CHIP_STAT, 1, @flag)
     return (flag == core#CHIP_STAT_SUSPEND)
 
-PUB UVChan(enabled) | tmp
+PUB UVChan(state): curr_state
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
-    case ||enabled
+    curr_state := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
+    case ||(state)
         0, 1:
-            enabled := (||enabled) << core#EN_UV
+            state := ||(state) << core#EN_UV
         OTHER:
-            result := ((tmp >> core#EN_UV) & %1) * TRUE
-            return result
+            return ((curr_state >> core#EN_UV) & %1) == 1
 
-    tmp &= core#EN_UV_MASK
-    tmp := (tmp | enabled) & core#CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
+    state := ((curr_state & core#EN_UV_MASK) | state) & core#CHLIST_MASK
+    command(core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB UVCoefficients(rw, coeffs) | tmp
 ' Set coefficients used to calculate UV index readings
