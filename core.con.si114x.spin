@@ -111,7 +111,7 @@ CON
     CMD_RESET                   = %000_00001
     CMD_BUSADDR                 = %000_00010
     CMD_PS_FORCE                = %000_00101
-    CMD_GET_CAL                 = %0001_0010
+    CMD_GET_CAL                 = %000_10010
     CMD_ALS_FORCE               = %000_00110
     CMD_PSALS_FORCE             = %000_00111
     CMD_PS_PAUSE                = %000_01001
@@ -122,14 +122,14 @@ CON
     CMD_PSALS_AUTO              = %000_01111
 
 ' RESPONSE register return values
-    RSP_NO_ERROR                = %0000 << 4
-    RSP_INVALID_SETTING         = %1000_0000
-    RSP_PS1_ADC_OVERFLOW        = %1000_1000
-    RSP_PS2_ADC_OVERFLOW        = %1000_1001
-    RSP_PS3_ADC_OVERFLOW        = %1000_1010
-    RSP_ALS_VIS_ADC_OVERFLOW    = %1000_1100
-    RSP_ALS_IR_ADC_OVERFLOW     = %1000_1101
-    RSP_AUX_ADC_OVERFLOW        = %1000_1110
+    NO_ERROR                    = %0000
+    INVALID_SETTING             = %1000_0000
+    PS1_ADC_OVERFLOW            = %1000_1000
+    PS2_ADC_OVERFLOW            = %1000_1001
+    PS3_ADC_OVERFLOW            = %1000_1010
+    ALS_VIS_ADC_OVERFLOW        = %1000_1100
+    ALS_IR_ADC_OVERFLOW         = %1000_1101
+    AUX_ADC_OVERFLOW            = %1000_1110
 
 ' Sequencer RAM Parameters
     I2C_ADDR                    = $00

@@ -22,9 +22,9 @@ CON
     I2C_MAX_FREQ            = core#I2C_MAX_FREQ
 
 ' Chip status
-    CHIP_STAT_SLEEP         = core#CHIP_STAT_SLEEP
-    CHIP_STAT_SUSPEND       = core#CHIP_STAT_SUSPEND
-    CHIP_STAT_RUNNING       = core#CHIP_STAT_RUNNING
+    SLEEP                   = core#CHIP_STAT_SLEEP
+    SUSP                    = core#CHIP_STAT_SUSPEND
+    RUN                     = core#CHIP_STAT_RUNNING
 
 ' Operation modes
     ONE_PS                  = core#CMD_PS_FORCE
@@ -57,7 +57,7 @@ PUB Null{}
 
 PUB Start{}: okay
 ' Start using "standard" Propeller I2C pins, 100kHz
-    okay := Startx (DEF_SCL, DEF_SDA, DEF_HZ)
+    okay := startx(DEF_SCL, DEF_SDA, DEF_HZ)
 
 PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
 ' Start using custom I2C pins and bus frequency
@@ -74,7 +74,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
     return FALSE                                ' something above failed
 
 PUB Stop{}
-' Put any other housekeeping code here required/recommended by your device before shutting down
+
     i2c.terminate{}
 
 PUB AUXChan(state): curr_state
@@ -85,7 +85,7 @@ PUB AUXChan(state): curr_state
     case ||(state)
         0, 1:
             state := ||(state) << core#EN_AUX
-        OTHER:
+        other:
             return ((curr_state >> core#EN_AUX) & %1) == 1
 
     state := ((curr_state & core#EN_AUX_MASK) | state) & core#CHLIST_MASK
@@ -98,7 +98,7 @@ PUB CalData(cal_word)
     case cal_word
         0..5:
             return _cal_data[cal_word]
-        OTHER:
+        other:
             return
 
 PUB DeviceID{}: id
@@ -107,7 +107,7 @@ PUB DeviceID{}: id
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
-    readReg (core#PART_ID, 1, @id)
+    readreg(core#PART_ID, 1, @id)
 
 PUB IRChan(state): curr_state
 ' Enable the IR ambient light source data channel
@@ -117,7 +117,7 @@ PUB IRChan(state): curr_state
     case ||(state)
         0, 1:
             state := ||(state) << core#EN_ALS_IR
-        OTHER:
+        other:
             return ((curr_state >> core#EN_ALS_IR) & %1) == 1
 
     state := ((curr_state & core#EN_ALS_IR_MASK) | state) & core#CHLIST_MASK
@@ -125,7 +125,7 @@ PUB IRChan(state): curr_state
 
 PUB IRData{}: ir_adc
 ' Return data from infra-red light channel
-    readReg (core#ALS_IR_DATA0, 2, @ir_adc)
+    readreg (core#ALS_IR_DATA0, 2, @ir_adc)
 
 PUB IRGain(gain): curr_gain
 ' Gain factor of infra-red light sensor
@@ -138,7 +138,7 @@ PUB IRGain(gain): curr_gain
         16: gain := %100
         64: gain := %110
         128: gain := %111
-        OTHER:
+        other:
             return lookupz(curr_gain & core#ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0,{
             } 16, 0, 64, 128)
 
@@ -151,8 +151,8 @@ PUB IRGain(gain): curr_gain
 PUB IROverflow{}: flag
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
-    readReg (core#RESPONSE, 1, @flag)
-    return (flag == core#RSP_ALS_IR_ADC_OVERFLOW)
+    readreg (core#RESPONSE, 1, @flag)
+    return (flag == core#ALS_IR_ADC_OVERFLOW)
 
 PUB IRRange(range): curr_rng
 ' Set measurement range of infra-red light sensor
@@ -162,7 +162,7 @@ PUB IRRange(range): curr_rng
     curr_rng := command(core#CMD_PARAM_QUERY, core#ALS_IR_ADC_MISC, 0)
     case range
         NORMAL, HIGH:
-        OTHER:
+        other:
             return curr_rng
 
     range &= core#ALS_IR_ADC_MISC_MASK
@@ -173,15 +173,15 @@ PUB MeasureRate(rate): curr_rate
 '   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
 '   Any other value polls the chip and returns the current setting
     curr_rate := $0000
-    readReg(core#MEAS_RATE0, 2, @curr_rate)
+    readreg(core#MEAS_RATE0, 2, @curr_rate)
     case rate
         31..2047969:                            ' 31.25uS..2047968.75uS
             rate *= 1_00                        ' Scaling, to preseve accuracy
             rate /= 31_25
-        OTHER:
+        other:
             return (curr_rate * 31_25) / 100
 
-    writeReg(core#MEAS_RATE0, 2, @rate)
+    writereg(core#MEAS_RATE0, 2, @rate)
 
 PUB OpMode(mode): curr_mode
 ' Set operation mode
@@ -195,7 +195,7 @@ PUB OpMode(mode): curr_mode
         ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS,{
         } PAUSE_ALS, PAUSE_PSALS:
             _opmode := mode
-        OTHER:
+        other:
             return _opmode                      ' not readable from sensor;
                                                 ' keep a local copy
 
@@ -204,11 +204,11 @@ PUB OpMode(mode): curr_mode
 PUB ReadCalData{}
 ' Read calibration data into 6-word array
     command(core#CMD_GET_CAL, 0, 0)
-    readReg(core#CAL_DATA, 12, @_cal_data)
+    readreg(core#CAL_DATA, 12, @_cal_data)
 
 PUB Reset{}
 ' Perform soft-reset
-    command (core#CMD_RESET, 0, 0)
+    command(core#CMD_RESET, 0, 0)
     time.msleep(10)
     hwkey{}
     time.msleep(10)
@@ -217,7 +217,7 @@ PUB Reset{}
 PUB RevID{}: id
 ' Revision
 '   Returns: $00
-    readReg(core#REV_ID, 1, @id)
+    readreg(core#REV_ID, 1, @id)
 
 PUB Running{}: flag
 ' Flag indicating device is running/awake
@@ -241,9 +241,9 @@ PUB Sleeping{}: flag
 PUB Status{}: curr_stat
 ' Chip status
 '   Returns:
-'       CHIP_STAT_RUNNING (%100): Device is awake
-'       CHIP_STAT_SUSPEND (%010): Device is in a low-power state, waiting for a measurement to complete
-'       CHIP_STAT_SLEEP (%001): Device is in its lowest power state
+'       RUN (%100): Device is awake
+'       SUSP (%010): Device is in a low-power state, waiting for a measurement to complete
+'       SLEEP (%001): Device is in its lowest power state
     readreg(core#CHIP_STAT, 1, @curr_stat)
 
 PUB Suspended{}: flag
@@ -257,11 +257,11 @@ PUB UVChan(state): curr_state
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
+    curr_state := command(core#CMD_PARAM_QUERY, core#CHLIST, 0)
     case ||(state)
         0, 1:
             state := ||(state) << core#EN_UV
-        OTHER:
+        other:
             return ((curr_state >> core#EN_UV) & %1) == 1
 
     state := ((curr_state & core#EN_UV_MASK) | state) & core#CHLIST_MASK
@@ -279,7 +279,7 @@ PUB UVCoefficients(rw, coeffs): curr_coeffs
         0:                                      ' Read
             return
         1:                                      ' Write
-            writeReg(core#UCOEF0, 4, @coeffs)
+            writereg(core#UCOEF0, 4, @coeffs)
 
 PUB UVData{}: uv_adc
 ' Return data from UV index channel
@@ -293,7 +293,7 @@ PUB VisibleChan(state): curr_state
     case ||(state)
         0, 1:
             state := ||(state) << core#EN_ALS_VIS
-        OTHER:
+        other:
             return ((curr_state >> core#EN_ALS_VIS) & %1) == 1
 
     state := ((curr_state & core#EN_ALS_VIS_MASK) | state) & core#CHLIST_MASK
@@ -314,21 +314,21 @@ PUB VisibleGain(gain): curr_gain
         16: gain := %100
         64: gain := %110
         128: gain := %111
-        OTHER:
+        other:
             return lookupz(curr_gain & core#ALS_VIS_ADCGAIN_BITS: 1, 0, 0, 0,{
             } 16, 0, 64, 128)
 
-    command (core#CMD_PARAM_SET, core#ALS_VIS_ADCGAIN, gain)
+    command(core#CMD_PARAM_SET, core#ALS_VIS_ADCGAIN, gain)
     gain <<= core#VIS_ADC_REC
     ' Set the one's complement of the gain val
     ' to ADC recovery period, per datasheet
-    command (core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)
+    command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)
 
 PUB VisibleOverflow{}: flag
 ' Flag indicating visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     readreg(core#RESPONSE, 1, @flag)
-    return (flag == core#RSP_ALS_VIS_ADC_OVERFLOW)
+    return (flag == core#ALS_VIS_ADC_OVERFLOW)
 
 PUB VisibleRange(range): curr_rng
 ' Set measurement range of visible light sensor
@@ -339,85 +339,87 @@ PUB VisibleRange(range): curr_rng
     curr_rng := command(core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_MISC, 0)
     case range
         NORMAL, HIGH:
-        OTHER:
+        other:
             return curr_rng
 
     command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_MISC, range)
 
-PRI command(cmd, param, args) | tmp
-
+PRI command(cmd, param, args): resp | tmp
+' Send command with parameters to device
     case cmd
         core#CMD_PARAM_QUERY:
             cmd |= param
-            tmp := core#CMD_NOP
-            writeReg (core#COMMAND, 1, @tmp)
-            readReg (core#RESPONSE, 1, @result)
-            if result == $00
-                writeReg (core#COMMAND, 1, @cmd)
-            readReg (core#RESPONSE, 1, @result)
-'            if result and not (result & $80)
-            readReg (core#PARAM_RD, 1, @result)
+            tmp := core#CMD_NOP                 ' first check the device isn't
+            writereg(core#COMMAND, 1, @tmp)     '   in an error state, since it
+            readreg(core#RESPONSE, 1, @resp)    '   won't process any commands
+            if resp == core#NO_ERROR            '   if so
+                writereg(core#COMMAND, 1, @cmd)
+            readreg(core#RESPONSE, 1, @resp)    ' XXX review logic from here past
+'            if resp and not (resp & $80)
+            readreg(core#PARAM_RD, 1, @resp)
             return
 
         core#CMD_PARAM_SET:
             cmd |= param
             tmp := core#CMD_NOP
-            writeReg (core#PARAM_WR, 1, @args)
-            writeReg (core#COMMAND, 1, @tmp)
-            readReg (core#RESPONSE, 1, @result)
-            if result == $00
-                writeReg (core#COMMAND, 1, @cmd)
-            readReg (core#RESPONSE, 1, @result)
-'            if result and not (result & $80)
-            readReg (core#RESPONSE, 1, @result)
+            writereg(core#PARAM_WR, 1, @args)
+            writereg(core#COMMAND, 1, @tmp)
+            readreg(core#RESPONSE, 1, @resp)
+            if resp == core#NO_ERROR
+                writereg (core#COMMAND, 1, @cmd)
+            readreg(core#RESPONSE, 1, @resp)
+'            if resp and not (resp & $80)
+            readreg(core#RESPONSE, 1, @resp)
             return
 
-        core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE, core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
-    }   core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE, core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
+        core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE,{
+        } core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
+        } core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE,{
+        } core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
             tmp := core#CMD_NOP
-            writeReg (core#COMMAND, 1, @tmp)
-            readReg (core#RESPONSE, 1, @result)
-            if result == $00
-                writeReg (core#COMMAND, 1, @cmd)
-            readReg (core#RESPONSE, 1, @result)
+            writereg(core#COMMAND, 1, @tmp)
+            readreg(core#RESPONSE, 1, @resp)
+            if resp == core#NO_ERROR
+                writereg(core#COMMAND, 1, @cmd)
+            readreg(core#RESPONSE, 1, @resp)
             return
 
-PRI hwKey
+PRI hwKey{} | tmp
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
-    result := core#HW_KEY_EXPECTED
-    writeReg (core#HW_KEY, 1, @result)
+    tmp := core#HW_KEY_EXPECTED
+    writereg(core#HW_KEY, 1, @tmp)
 
-PRI readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-' Read nr_bytes from the slave device into the address stored in buff_addr
-    case reg                                                    'Basic register validation
+PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+' Read nr_bytes from the device into ptr_buff
+    case reg_nr                                 ' validate register
         $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
-            cmd_packet.byte[0] := SLAVE_WR
-            cmd_packet.byte[1] := reg
+            cmd_pkt.byte[0] := SLAVE_WR
+            cmd_pkt.byte[1] := reg_nr
 
-            i2c.start
-            i2c.wr_block (@cmd_packet, 2)
+            i2c.start{}
+            i2c.wr_block(@cmd_pkt, 2)
 
-            i2c.start
-            i2c.write (SLAVE_RD)
-            i2c.rd_block (buff_addr, nr_bytes, TRUE)
-            i2c.stop
-        OTHER:
-            return $DEADBEEF
+            i2c.start{}
+            i2c.write(SLAVE_RD)
+            i2c.rd_block(ptr_buff, nr_bytes, TRUE)
+            i2c.stop{}
+        other:
+            return
 
-PRI writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-' Write nr_bytes to the slave device from the address stored in buff_addr
-    case reg                                                    'Basic register validation
+PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+' Write nr_bytes from ptr_buff to the device
+    case reg_nr
         $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
-            cmd_packet.byte[0] := SLAVE_WR
-            cmd_packet.byte[1] := reg
+            cmd_pkt.byte[0] := SLAVE_WR
+            cmd_pkt.byte[1] := reg_nr
 
-            i2c.start
-            i2c.wr_block (@cmd_packet, 2)
+            i2c.start{}
+            i2c.wr_block(@cmd_pkt, 2)
             repeat tmp from 0 to nr_bytes-1
-                i2c.write (byte[buff_addr][tmp])
-            i2c.stop
+                i2c.write(byte[ptr_buff][tmp])
+            i2c.stop{}
 
-        OTHER:
+        other:
             return
 
 
