@@ -267,43 +267,41 @@ PUB UVChan(state): curr_state
     state := ((curr_state & core#EN_UV_MASK) | state) & core#CHLIST_MASK
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB UVCoefficients(rw, coeffs) | tmp
+PUB UVCoefficients(rw, coeffs): curr_coeffs
 ' Set coefficients used to calculate UV index readings
 '   Valid values:
 '       rw: READ (0), WRITE (1)
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    tmp := $00_00_00_00
-    readReg(core#UCOEF0, 4, @tmp)
+    curr_coeffs := 0
+    readreg(core#UCOEF0, 4, @curr_coeffs)
     case rw
-        0:                                              ' Read
-            return tmp
-        1:                                              ' Write
+        0:                                      ' Read
+            return
+        1:                                      ' Write
             writeReg(core#UCOEF0, 4, @coeffs)
 
-PUB UVData | tmp
+PUB UVData{}: uv_adc
 ' Return data from UV index channel
-    readReg (core#AUX_DATA0, 2, @result)
+    readreg(core#AUX_DATA0, 2, @uv_adc)
 
-PUB VisibleChan(enabled) | tmp
+PUB VisibleChan(state): curr_state
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
-    case ||enabled
+    curr_state := command(core#CMD_PARAM_QUERY, core#CHLIST, 0)
+    case ||(state)
         0, 1:
-            enabled := (||enabled) << core#EN_ALS_VIS
+            state := ||(state) << core#EN_ALS_VIS
         OTHER:
-            result := ((tmp >> core#EN_ALS_VIS) & %1) * TRUE
-            return result
+            return ((curr_state >> core#EN_ALS_VIS) & %1) == 1
 
-    tmp &= core#EN_ALS_VIS_MASK
-    tmp := (tmp | enabled) & core#CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
+    state := ((curr_state & core#EN_ALS_VIS_MASK) | state) & core#CHLIST_MASK
+    command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB VisibleData
+PUB VisibleData{}: vis_adc
 ' Return data from visible light channel
-    readReg (core#ALS_VIS_DATA0, 2, @result)
+    readreg(core#ALS_VIS_DATA0, 2, @vis_adc)
 
 PUB VisibleGain(gain) | tmp
 ' Gain factor of visible light sensor
