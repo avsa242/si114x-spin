@@ -13,13 +13,13 @@
 
 CON
 
-    SLAVE_WR          = core#SLAVE_ADDR
-    SLAVE_RD          = core#SLAVE_ADDR|1
+    SLAVE_WR                = core#SLAVE_ADDR
+    SLAVE_RD                = core#SLAVE_ADDR|1
 
-    DEF_SCL           = 28
-    DEF_SDA           = 29
-    DEF_HZ            = 400_000
-    I2C_MAX_FREQ      = core#I2C_MAX_FREQ
+    DEF_SCL                 = 28
+    DEF_SDA                 = 29
+    DEF_HZ                  = 100_000
+    I2C_MAX_FREQ            = core#I2C_MAX_FREQ
 
 ' Chip status
     CHIP_STAT_SLEEP         = core#CHIP_STAT_SLEEP
@@ -41,7 +41,6 @@ CON
     NORMAL                  = $00
     HIGH                    = $20
 
-
 VAR
 
     word _cal_data[6]
@@ -53,45 +52,44 @@ OBJ
     core: "core.con.si114x.spin"
     time: "time"
 
-PUB Null
-''This is not a top-level object
+PUB Null{}
+' This is not a top-level object
 
-PUB Start: okay                                                 'Default to "standard" Propeller I2C pins and 400kHz
-
+PUB Start{}: okay
+' Start using "standard" Propeller I2C pins, 100kHz
     okay := Startx (DEF_SCL, DEF_SDA, DEF_HZ)
 
 PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
-
+' Start using custom I2C pins and bus frequency
     if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31)
         if I2C_HZ =< core#I2C_MAX_FREQ
-            if okay := i2c.setupx (SCL_PIN, SDA_PIN, I2C_HZ)    'I2C Object Started?
-                time.MSleep (25)
-                if i2c.present (SLAVE_WR)                       'Response from device?
-                    if lookdown(DeviceID: core#PART_ID_RESP_1145, core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
-                        Reset
+            if okay := i2c.setupx(SCL_PIN, SDA_PIN, I2C_HZ)
+                time.msleep(25)
+                if i2c.present(SLAVE_WR)        ' check device bus presence
+                    if lookdown(deviceid{}: core#PART_ID_RESP_1145,{
+                    } core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
+                        reset{}
                         return okay
 
-    return FALSE                                                'If we got here, something went wrong
+    return FALSE                                ' something above failed
 
-PUB Stop
+PUB Stop{}
 ' Put any other housekeeping code here required/recommended by your device before shutting down
-    i2c.terminate
+    i2c.terminate{}
 
-PUB AUXChan(enabled) | tmp
+PUB AUXChan(state): curr_state
 ' Enable the auxiliary source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := command (core#CMD_PARAM_QUERY, core#CHLIST, 0)
-    case ||enabled
+    curr_state := command(core#CMD_PARAM_QUERY, core#CHLIST, 0)
+    case ||(state)
         0, 1:
-            enabled := (||enabled) << core#EN_AUX
+            state := ||(state) << core#EN_AUX
         OTHER:
-            result := ((tmp >> core#EN_AUX) & %1) * TRUE
-            return result
+            return ((curr_state >> core#EN_AUX) & %1) == 1
 
-    tmp &= core#EN_AUX_MASK
-    tmp := (tmp | enabled) & core#CHLIST_MASK
-    command (core#CMD_PARAM_SET, core#CHLIST, tmp)
+    state := ((curr_state & core#EN_AUX_MASK) | state) & core#CHLIST_MASK
+    command(core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB CalData(cal_word)
 ' Return a word of calibration data
