@@ -183,7 +183,7 @@ PUB MeasureRate(rate): curr_rate
 
     writeReg(core#MEAS_RATE0, 2, @rate)
 
-PUB OpMode(mode)
+PUB OpMode(mode): curr_mode
 ' Set operation mode
 '   Valid values:
 '       ONE_PS, ONE_ALS, ONE_PSALS: Force a single PS, ALS or PS+ALS measurement
@@ -192,62 +192,66 @@ PUB OpMode(mode)
 '   Valid values return response status from chip
 '   Any other value returns the last setting (shadow register)
     case mode
-        ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS, PAUSE_ALS, PAUSE_PSALS:
+        ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS,{
+        } PAUSE_ALS, PAUSE_PSALS:
             _opmode := mode
         OTHER:
-            return _opmode                  ' No way to read measurement mode from sensor, so maintain state
-                                            ' in a shadow register
+            return _opmode                      ' not readable from sensor;
+                                                ' keep a local copy
 
-    result := command (mode, 0, 0)
+    command(mode, 0, 0)
 
-PUB ReadCalData
+PUB ReadCalData{}
 ' Read calibration data into 6-word array
-    command (core#CMD_GET_CAL, 0, 0)
-    readReg (core#CAL_DATA, 12, @_cal_data)
+    command(core#CMD_GET_CAL, 0, 0)
+    readReg(core#CAL_DATA, 12, @_cal_data)
 
-PUB Reset
+PUB Reset{}
 ' Perform soft-reset
     command (core#CMD_RESET, 0, 0)
-    time.MSleep(10)
-    hwKey
-    time.MSleep(10)
-    OpMode (ONE_PSALS)
+    time.msleep(10)
+    hwkey{}
+    time.msleep(10)
+    opmode(ONE_PSALS)
 
-PUB RevID
+PUB RevID{}: id
 ' Revision
 '   Returns: $00
-    readReg (core#REV_ID, 1, @result)
+    readReg(core#REV_ID, 1, @id)
 
-PUB Running
-' Running status
-'   Returns: TRUE if device is awake, FALSE otherwise
-    readReg (core#CHIP_STAT, 1, @result)
-    result := (result == core#CHIP_STAT_RUNNING)
+PUB Running{}: flag
+' Flag indicating device is running/awake
+'   Returns: TRUE (-1) if device is awake, FALSE (0) otherwise
+    readreg(core#CHIP_STAT, 1, @flag)
+    return (flag == core#CHIP_STAT_RUNNING)
 
-PUB SeqID
+PUB SeqID{}: seq_rev
 ' Sequencer revision
-'   Returns: $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
-    readReg (core#SEQ_ID, 1, @result)
+'   Returns known values:
+'       $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
+    readreg(core#SEQ_ID, 1, @seq_rev)
 
-PUB Sleeping
-' Sleeping status
-'   Returns: TRUE if device is in its lowest power state, FALSE otherwise
-    readReg (core#CHIP_STAT, 1, @result)
-    result := (result == core#CHIP_STAT_SLEEP)
+PUB Sleeping{}: flag
+' Flag indicating device is sleeping
+'   Returns:    TRUE (-1) if device is in its lowest power state
+'               FALSE (0) otherwise
+    readreg(core#CHIP_STAT, 1, @flag)
+    return (flag == core#CHIP_STAT_SLEEP)
 
-PUB Status
+PUB Status{}: curr_stat
 ' Chip status
 '   Returns:
 '       CHIP_STAT_RUNNING (%100): Device is awake
 '       CHIP_STAT_SUSPEND (%010): Device is in a low-power state, waiting for a measurement to complete
 '       CHIP_STAT_SLEEP (%001): Device is in its lowest power state
-    readReg (core#CHIP_STAT, 1, @result)
+    readreg(core#CHIP_STAT, 1, @curr_stat)
 
-PUB Suspended
+PUB Suspended{}: flag
 ' Suspended status
-'   Returns: TRUE if device is in a low-power state, waiting for a measurement to complete, FALSE otherwise
-    readReg (core#CHIP_STAT, 1, @result)
-    result := (result == core#CHIP_STAT_SUSPEND)
+'   Returns:    TRUE (-1) if device is in a low-power state,
+'               FALSE (0) otherwise
+    readreg(core#CHIP_STAT, 1, @flag)
+    return (flag == core#CHIP_STAT_SUSPEND)
 
 PUB UVChan(enabled) | tmp
 ' Enable the UV index source data channel
