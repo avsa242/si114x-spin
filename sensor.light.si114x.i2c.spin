@@ -148,26 +148,25 @@ PUB IRGain(gain): curr_gain
     ' to ADC recovery period, per datasheet
     command(core#CMD_PARAM_SET, core#ALS_IR_ADC_COUNTER, !gain)
 
-PUB IROverflow
+PUB IROverflow{}: flag
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
-    readReg (core#RESPONSE, 1, @result)
-    return (result == core#RSP_ALS_IR_ADC_OVERFLOW)
+    readReg (core#RESPONSE, 1, @flag)
+    return (flag == core#RSP_ALS_IR_ADC_OVERFLOW)
 
-PUB IRRange(range) | tmp
+PUB IRRange(range): curr_rng
 ' Set measurement range of infra-red light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)
-    tmp := $00
-    tmp := command (core#CMD_PARAM_QUERY, core#ALS_IR_ADC_MISC, 0)
+    curr_rng := command(core#CMD_PARAM_QUERY, core#ALS_IR_ADC_MISC, 0)
     case range
         NORMAL, HIGH:
         OTHER:
-            return tmp
+            return curr_rng
 
     range &= core#ALS_IR_ADC_MISC_MASK
-    return command (core#CMD_PARAM_SET, core#ALS_IR_ADC_MISC, range)
+    command(core#CMD_PARAM_SET, core#ALS_IR_ADC_MISC, range)
 
 PUB MeasureRate(usec) | tmp
 ' Set time duration between measurements, in microseconds
