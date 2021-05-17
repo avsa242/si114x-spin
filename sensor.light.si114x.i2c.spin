@@ -53,7 +53,7 @@ VAR
 OBJ
 
     i2c : "com.i2c"
-    core: "core.con.si114x.spin"
+    core: "core.con.si114x"
     time: "time"
 
 PUB Null{}
