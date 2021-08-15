@@ -52,7 +52,13 @@ VAR
 
 OBJ
 
-    i2c : "com.i2c"
+#ifdef SI114X_SPIN
+    i2c : "tiny.com.i2c"                        ' SPIN I2C engine (~30kHz)
+#elseifdef SI114X_PASM
+    i2c : "com.i2c"                             ' PASM I2C engine (~800kHz)
+#else
+#error "One of SI114X_SPIN or SI114X_PASM must be defined"
+#endif
     core: "core.con.si114x"
     time: "time"
 

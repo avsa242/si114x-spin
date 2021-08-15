@@ -3,12 +3,15 @@
     Filename: SI114x-Demo.spin
     Author: Jesse Burt
     Description: Demo of the Si114x driver
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Feb 29, 2020
-    Updated Nov 20, 2020
+    Updated Aug 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
+' Uncomment one of the below lines to choose the SPIN or PASM-based I2C engine
+#define SI114X_SPIN
+'#define SI114X_PASM
 
 CON
 
@@ -25,9 +28,9 @@ CON
 ' --
 
     TEXT_COL    = 0
-    DATA_COL    = TEXT_COL+30
+    DATA_COL    = TEXT_COL+15
 
-    ROW         = 10
+    ROW         = 3
 
     R           = si#R                          ' read/write constants
     W           = si#W                          ' for UVCoefficients()
@@ -84,18 +87,14 @@ PUB Setup{}
     ser.clear{}
     ser.strln(string("Serial terminal started"))
     if si.startx(I2C_SCL, I2C_SDA, I2C_HZ)
-        ser.str(string("SI114x driver started (Si11"))
-        ser.hex(si.deviceid{}, 2)
-        ser.str(string(" rev "))
-        ser.hex(si.revid{}, 2)
-        ser.str(string(", sequencer rev "))
-        ser.hex(si.seqid{}, 2)
-        ser.strln(string(" found)"))
+#ifdef SI114X_SPIN
+        ser.str(string("SI114x driver started (I2C-SPIN)"))
+#elseifdef SI114X_PASM
+        ser.str(string("SI114x driver started (I2C-PASM)"))
+#endif
     else
         ser.strln(string("SI114x driver failed to start - halting"))
-        time.MSleep (5)
-        ser.Stop
-        si.Stop
+        repeat
 
 DAT
 {
