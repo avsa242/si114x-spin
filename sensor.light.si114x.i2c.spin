@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Driver for the Silicon Labs Si114[5|6|7] series
         Proximity/UV/Amblient light sensor IC
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Jun 01, 2019
-    Updated Nov 21, 2020
+    Updated Aug 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -59,34 +59,38 @@ OBJ
 PUB Null{}
 ' This is not a top-level object
 
-PUB Start{}: okay
+PUB Start{}: status
 ' Start using "standard" Propeller I2C pins, 100kHz
-    okay := startx(DEF_SCL, DEF_SDA, DEF_HZ)
+    return startx(DEF_SCL, DEF_SDA, DEF_HZ)
 
-PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): okay
+PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): status
 ' Start using custom I2C pins and bus frequency
-    if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31)
-        if I2C_HZ =< core#I2C_MAX_FREQ
-            if okay := i2c.setupx(SCL_PIN, SDA_PIN, I2C_HZ)
-                time.usleep(core#T_POR)
-                if i2c.present(SLAVE_WR)        ' check device bus presence
-                    if lookdown(deviceid{}: core#PART_ID_RESP_1145,{
-                    } core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
-                        reset{}
-                        return okay
-
-    return FALSE                                ' something above failed
+    if lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) and {
+}   I2C_HZ =< core#I2C_MAX_FREQ
+        if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
+            time.usleep(core#T_POR)
+            if i2c.present(SLAVE_WR)            ' check device bus presence
+                if lookdown(deviceid{}: core#PART_ID_RESP_1145,{
+                } core#PART_ID_RESP_1146, core#PART_ID_RESP_1147)
+                    reset{}
+                    return
+    ' if this point is reached, something above failed
+    ' Double check I/O pin assignments, connections, power
+    ' Lastly - make sure you have at least one free core/cog
+    return FALSE
 
 PUB Stop{}
-
-    i2c.terminate{}
+' Stop I2C engine and clear cached data
+    i2c.deinit{}
+    wordfill(@_cal_data, 0, 6)
+    _opmode := 0
 
 PUB Defaults{}
 ' Factory default settings
     reset{}
 
 PUB PresetALS{}
-' Preset settings for ambient light sension mode
+' Preset settings for ambient light sensing mode
     reset{}                                     ' start with POR defaults
     opmode(CONT_ALS)
 
@@ -247,6 +251,14 @@ PUB OpMode(mode): curr_mode
 
     command(mode, 0, 0)
 
+PUB PowerState{}: curr_state
+' Chip status
+'   Returns:
+'       RUN (%100): Device is awake
+'       SUSP (%010): Device is in a low-power state, waiting for a measurement to complete
+'       SLEEP (%001): Device is in its lowest power state
+    readreg(core#CHIP_STAT, 1, @curr_state)
+
 PUB ReadCalData{}
 ' Read calibration data into 6-word array
     wordfill(@_cal_data, 0, 6)
@@ -284,14 +296,6 @@ PUB Sleeping{}: flag
 '               FALSE (0) otherwise
     readreg(core#CHIP_STAT, 1, @flag)
     return (flag == core#CHIP_STAT_SLEEP)
-
-PUB Status{}: curr_stat
-' Chip status
-'   Returns:
-'       RUN (%100): Device is awake
-'       SUSP (%010): Device is in a low-power state, waiting for a measurement to complete
-'       SLEEP (%001): Device is in its lowest power state
-    readreg(core#CHIP_STAT, 1, @curr_stat)
 
 PUB Suspended{}: flag
 ' Suspended status
@@ -428,7 +432,10 @@ PRI command(cmd, param, args): resp | tmp
             readreg(core#RESPONSE, 1, @resp)
             if resp == core#NO_ERROR
                 writereg(core#COMMAND, 1, @cmd)
-            readreg(core#RESPONSE, 1, @resp)
+            if cmd == core#CMD_RESET            ' no response when resetting
+                time.msleep(1)                  ' also must wait min. 1ms
+                return
+            readreg(core#RESPONSE, 1, @resp) ' XXX device NAK on bus if cmd was reset...must wait?
             return
 
 PRI hwKey{} | tmp
@@ -444,11 +451,11 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
             cmd_pkt.byte[1] := reg_nr
 
             i2c.start{}
-            i2c.wr_block(@cmd_pkt, 2)
+            i2c.wrblock_lsbf(@cmd_pkt, 2)
 
             i2c.start{}
             i2c.write(SLAVE_RD)
-            i2c.rd_block(ptr_buff, nr_bytes, TRUE)
+            i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c#NAK)
             i2c.stop{}
         other:
             return
@@ -461,11 +468,9 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
             cmd_pkt.byte[1] := reg_nr
 
             i2c.start{}
-            i2c.wr_block(@cmd_pkt, 2)
-            repeat tmp from 0 to nr_bytes-1
-                i2c.write(byte[ptr_buff][tmp])
+            i2c.wrblock_lsbf(@cmd_pkt, 2)
+            i2c.wrblock_lsbf(ptr_buff, nr_bytes)
             i2c.stop{}
-
         other:
             return
 
