@@ -3,7 +3,7 @@
 
 This is a P8X32A/Propeller driver object for the Silicon Labs Si114x (5, 6, 7) series UV/Proximity/Ambient light sensors.
 
-**IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or ~~[p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P)~~. Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
+**IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
 
 ## Salient Features
 
@@ -21,13 +21,13 @@ P1/SPIN1:
 * spin-standard-library
 * 1 extra core/cog for the PASM I2C driver
 
-~~P2/SPIN2:~~
-* ~~p2-spin-standard-library~~
+P2/SPIN2:
+* p2-spin-standard-library
 
 ## Compiler Compatibility
 
 * P1/SPIN1: OpenSpin (tested with 1.00.81)
-* ~~P2/SPIN2: FastSpin (tested with 5.0.0)~~ _(not yet implemented)_
+* P2/SPIN2: FlexSpin (tested with 5.9.3-beta)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)
@@ -41,16 +41,3 @@ P1/SPIN1:
 * Doesn't support temp sensor/Vdd/Vss reading (not currently planned)
 * Measurement calibration/correction/calculation unverified
 
-## TODO
-
-- [ ] Verify ambient light and IR measurements
-- [ ] Verify UV Index measurements
-- [ ] Cleanup RAM parameter API
-- [x] Implement measure rate
-- [ ] Implement IR LED current setting
-- [ ] Implement interrupt status methods
-- [x] Implement methods to enable/disable individual data channels
-- [ ] Implement alternate slave address support
-- [ ] Implement support for reading individual sensor factory-programmed coefficients
-- [ ] Update API for consistency with other drivers
-- [ ] Port to P2/SPIN2
