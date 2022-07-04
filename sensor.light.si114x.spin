@@ -6,7 +6,7 @@
         Proximity/UV/Amblient light sensor IC
     Copyright (c) 2022
     Started Jun 01, 2019
-    Updated May 25, 2022
+    Updated Jul 4, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -52,12 +52,11 @@ VAR
 
 OBJ
 
-#ifdef SI114X_SPIN
+{ decide: Bytecode I2C engine, or PASM? Default is PASM if BC isn't specified }
+#ifdef SI114X_I2C_BC
     i2c : "com.i2c.nocog"                       ' SPIN I2C engine
-#elseifdef SI114X_PASM
-    i2c : "com.i2c"                             ' PASM I2C engine
 #else
-#error "One of SI114X_SPIN or SI114X_PASM must be defined"
+    i2c : "com.i2c"                             ' PASM I2C engine
 #endif
     core: "core.con.si114x"
     time: "time"
