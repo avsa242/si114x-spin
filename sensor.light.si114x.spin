@@ -228,6 +228,7 @@ PUB IRGain(gain): curr_gain
 PUB IROverflow{}: flag
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
+    flag := 0
     readreg (core#RESPONSE, 1, @flag)
     return (flag == core#ALS_IR_ADC_OVERFLOW)
 
@@ -264,16 +265,15 @@ PUB MeasureRate(rate): curr_rate
 ' Set time duration between measurements, in microseconds
 '   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
 '   Any other value polls the chip and returns the current setting
-    curr_rate := $0000
-    readreg(core#MEAS_RATE0, 2, @curr_rate)
     case rate
         31..2047969:                            ' 31.25uS..2047968.75uS
             rate *= 1_00                        ' Scaling, to preseve accuracy
             rate /= 31_25
+            writereg(core#MEAS_RATE0, 2, @rate)
         other:
+            curr_rate := 0
+            readreg(core#MEAS_RATE0, 2, @curr_rate)
             return ((curr_rate * 31_25) / 100)
-
-    writereg(core#MEAS_RATE0, 2, @rate)
 
 PUB OpMode(mode): curr_mode
 ' Set operation mode
@@ -299,6 +299,7 @@ PUB PowerState{}: curr_state
 '       RUN (%100): Device is awake
 '       SUSP (%010): Device is in a low-power state, waiting for a measurement to complete
 '       SLEEP (%001): Device is in its lowest power state
+    curr_state := 0
     readreg(core#CHIP_STAT, 1, @curr_state)
 
 PUB ReadCalData{}
@@ -325,6 +326,7 @@ PUB RevID{}: id
 PUB Running{}: flag
 ' Flag indicating device is running/awake
 '   Returns: TRUE (-1) if device is awake, FALSE (0) otherwise
+    flag := 0
     readreg(core#CHIP_STAT, 1, @flag)
     return (flag == core#CHIP_STAT_RUNNING)
 
@@ -332,12 +334,14 @@ PUB SeqID{}: seq_rev
 ' Sequencer revision
 '   Returns known values:
 '       $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
+    seq_rev := 0
     readreg(core#SEQ_ID, 1, @seq_rev)
 
 PUB Sleeping{}: flag
 ' Flag indicating device is sleeping
 '   Returns:    TRUE (-1) if device is in its lowest power state
 '               FALSE (0) otherwise
+    flag := 0
     readreg(core#CHIP_STAT, 1, @flag)
     return (flag == core#CHIP_STAT_SLEEP)
 
@@ -345,6 +349,7 @@ PUB Suspended{}: flag
 ' Suspended status
 '   Returns:    TRUE (-1) if device is in a low-power state,
 '               FALSE (0) otherwise
+    flag := 0
     readreg(core#CHIP_STAT, 1, @flag)
     return (flag == core#CHIP_STAT_SUSPEND)
 
@@ -368,16 +373,17 @@ PUB UVCoefficients(rw, coeffs): curr_coeffs
 '       rw: READ (0), WRITE (1)
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    curr_coeffs := 0
-    readreg(core#UCOEF0, 4, @curr_coeffs)
     case rw
         0:                                      ' Read
+            curr_coeffs := 0
+            readreg(core#UCOEF0, 4, @curr_coeffs)
             return
         1:                                      ' Write
             writereg(core#UCOEF0, 4, @coeffs)
 
 PUB UVData{}: uv_adc
 ' Return data from UV index channel
+    uv_adc := 0
     readreg(core#AUX_DATA0, 2, @uv_adc)
 
 PUB VisDark(val): curr_val
@@ -405,13 +411,14 @@ PUB VisibleChan(state): curr_state
 
 PUB VisibleData{}: vis_adc
 ' Return data from visible light channel
+    vis_adc := 0
     readreg(core#ALS_VIS_DATA0, 2, @vis_adc)
 
 PUB VisibleGain(gain): curr_gain
 ' Gain factor of visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
-    curr_gain := $00
+    curr_gain := 0
     curr_gain := command(core#CMD_PARAM_QUERY, core#ALS_VIS_ADC_GAIN, 0)
     case gain
         1: gain := %000
@@ -431,6 +438,7 @@ PUB VisibleGain(gain): curr_gain
 PUB VisibleOverflow{}: flag
 ' Flag indicating visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
+    flag := 0
     readreg(core#RESPONSE, 1, @flag)
     return (flag == core#ALS_VIS_ADC_OVERFLOW)
 
