@@ -111,7 +111,7 @@ PUB Preset_ALS{}
 ' Preset settings for ambient light sensing mode
     reset{}                                     ' start with POR defaults
     opmode(CONT_ALS)
-
+    measurerate(32)
     auxchan(FALSE)
     uvchan(FALSE)
     irchan(TRUE)
