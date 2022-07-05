@@ -40,7 +40,7 @@ PUB Main{}
     repeat
         ser.position(0, 3)
         ser.printf1(string("IR data: %04.4x\n\r"), si.irdata{})
-        ser.printf1(string("Visible data: %04.4x"), si.visibledata{})
+        ser.printf1(string("Visible data: %04.4x"), si.visdata{})
 
 PUB Setup{}
 

@@ -115,7 +115,7 @@ PUB Preset_ALS{}
     auxchan(FALSE)
     uvchan(FALSE)
     irchan(TRUE)
-    visiblechan(TRUE)
+    vischan(TRUE)
 
 PUB Preset_Prox{}
 ' Preset settings for proximity sensor mode
@@ -137,13 +137,13 @@ PUB Preset_UVI{}
     auxchan(FALSE)
     uvchan(TRUE)
     irchan(FALSE)
-    visiblechan(FALSE)
+    vischan(FALSE)
 
     irrange(HIGH)
-    visiblerange(HIGH)
+    visrange(HIGH)
 
     irgain(1)
-    visiblegain(1)
+    visgain(1)
 
 PUB AUXChan(state): curr_state
 ' Enable the auxiliary source data channel
@@ -252,7 +252,7 @@ PUB Lux{}: lx | vis, ir, lux1, lux2
     { average 50 samples }
     repeat 50
         opmode(ONE_ALS)
-        vis += visibledata{}
+        vis += visdata{}
         ir += irdata{}
     vis /= 50
     ir /= 50
@@ -387,7 +387,7 @@ PUB UVData{}: uv_adc
     readreg(core#AUX_DATA0, 2, @uv_adc)
 
 PUB VisDark(val): curr_val
-' Set visible sensor dark value (ADC word)
+' Set evisible sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
     if (lookdown(val: 0..65535))
@@ -395,7 +395,7 @@ PUB VisDark(val): curr_val
     else
         return _vis_dark
 
-PUB VisibleChan(state): curr_state
+PUB VisChan(state): curr_state
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -409,12 +409,12 @@ PUB VisibleChan(state): curr_state
     state := ((curr_state & core#EN_ALS_VIS_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB VisibleData{}: vis_adc
+PUB VisData{}: vis_adc
 ' Return data from visible light channel
     vis_adc := 0
     readreg(core#ALS_VIS_DATA0, 2, @vis_adc)
 
-PUB VisibleGain(gain): curr_gain
+PUB VisGain(gain): curr_gain
 ' Gain factor of visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
@@ -435,14 +435,14 @@ PUB VisibleGain(gain): curr_gain
     ' to ADC recovery period, per datasheet
     command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)
 
-PUB VisibleOverflow{}: flag
+PUB VisOverflow{}: flag
 ' Flag indicating visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg(core#RESPONSE, 1, @flag)
     return (flag == core#ALS_VIS_ADC_OVERFLOW)
 
-PUB VisibleRange(range): curr_rng
+PUB VisRange(range): curr_rng
 ' Set measurement range of visible light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
@@ -479,12 +479,12 @@ PRI command(cmd, param, args): resp | tmp
             return
         core#CMD_PARAM_SET:
             cmd |= param
+            writereg(core#PARAM_WR, 1, @args)
             repeat until (clrresp{} == core#NO_ERROR)
             writereg(core#COMMAND, 1, @cmd)
             repeat
                 readreg(core#RESPONSE, 1, @resp)
             while (resp == 0)
-            writereg(core#PARAM_WR, 1, @args)
             return
         core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE,{
         } core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
