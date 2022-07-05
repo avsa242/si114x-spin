@@ -456,44 +456,43 @@ PUB VisibleRange(range): curr_rng
 
     command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_MISC, range)
 
+PRI clrResp{}: resp | tmp
+' Clear response register
+'   Returns: response, after clearing
+    resp := 0
+    tmp := core#CMD_NOP
+    writereg(core#COMMAND, 1, @tmp)
+    readreg(core#RESPONSE, 1, @resp)
+
 PRI command(cmd, param, args): resp | tmp
 ' Send command with parameters to device
+    resp := 0
     case cmd
         core#CMD_PARAM_QUERY:
             cmd |= param
-            tmp := core#CMD_NOP                 ' first check the device isn't
-            writereg(core#COMMAND, 1, @tmp)     '   in an error state, since it
-            readreg(core#RESPONSE, 1, @resp)    '   won't process any commands
-            if resp == core#NO_ERROR            '   if so
-                writereg(core#COMMAND, 1, @cmd)
-            readreg(core#RESPONSE, 1, @resp)    ' XXX review logic from here past
-'            if resp and not (resp & $80)
+            repeat until (clrresp{} == core#NO_ERROR)
+            writereg(core#COMMAND, 1, @cmd)
+            repeat
+                readreg(core#RESPONSE, 1, @resp)
+            while (resp == 0)
             readreg(core#PARAM_RD, 1, @resp)
             return
-
         core#CMD_PARAM_SET:
             cmd |= param
-            tmp := core#CMD_NOP
+            repeat until (clrresp{} == core#NO_ERROR)
+            writereg(core#COMMAND, 1, @cmd)
+            repeat
+                readreg(core#RESPONSE, 1, @resp)
+            while (resp == 0)
             writereg(core#PARAM_WR, 1, @args)
-            writereg(core#COMMAND, 1, @tmp)
-            readreg(core#RESPONSE, 1, @resp)
-            if resp == core#NO_ERROR
-                writereg (core#COMMAND, 1, @cmd)
-            readreg(core#RESPONSE, 1, @resp)
-'            if resp and not (resp & $80)
-            readreg(core#RESPONSE, 1, @resp)
             return
-
         core#CMD_NOP, core#CMD_RESET, core#CMD_BUSADDR, core#CMD_PS_FORCE,{
         } core#CMD_GET_CAL, core#CMD_ALS_FORCE, core#CMD_PSALS_FORCE,{
         } core#CMD_PS_PAUSE, core#CMD_ALS_PAUSE, core#CMD_PSALS_PAUSE,{
         } core#CMD_PS_AUTO, core#CMD_ALS_AUTO, core#CMD_PSALS_AUTO:
-            tmp := core#CMD_NOP
-            writereg(core#COMMAND, 1, @tmp)
-            readreg(core#RESPONSE, 1, @resp)
-            if resp == core#NO_ERROR
-                writereg(core#COMMAND, 1, @cmd)
-            if cmd == core#CMD_RESET            ' no response when resetting
+            repeat until (clrresp{} == core#NO_ERROR)
+            writereg(core#COMMAND, 1, @cmd)
+            if (cmd == core#CMD_RESET)          ' no response when resetting
                 time.msleep(1)                  ' also must wait min. 1ms
                 return
             readreg(core#RESPONSE, 1, @resp) ' XXX device NAK on bus if cmd was reset...must wait?
