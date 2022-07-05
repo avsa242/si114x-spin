@@ -5,8 +5,8 @@
     Description: Driver for the Silicon Labs Si114[5|6|7] series
         Proximity/UV/Amblient light sensor IC
     Copyright (c) 2022
-    Started Jun 01, 2019
-    Updated Jul 4, 2022
+    Started Jun 1, 2019
+    Updated Jul 5, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -45,9 +45,21 @@ CON
     R                       = 0
     W                       = 1
 
+' Default dark sensor values
+    IR_DARK_DEF             = 250
+    VIS_DARK_DEF            = 260
+
+' Lux calculation coefficients
+    VIS_COEFF               = 5_4100
+    IR_COEFF                = 0_0800
+    VIS_CPL                 = 0_3190
+    IR_CPL                  = 8_4600
+    CORR_FACT               = 0_0800
+
 VAR
 
     word _cal_data[6]
+    word _ir_dark, _vis_dark
     byte _opmode
 
 OBJ
@@ -60,6 +72,7 @@ OBJ
 #endif
     core: "core.con.si114x"
     time: "time"
+    u64 : "math.unsigned64"
 
 PUB Null{}
 ' This is not a top-level object
@@ -94,7 +107,7 @@ PUB Defaults{}
 ' Factory default settings
     reset{}
 
-PUB PresetALS{}
+PUB Preset_ALS{}
 ' Preset settings for ambient light sensing mode
     reset{}                                     ' start with POR defaults
     opmode(CONT_ALS)
@@ -104,14 +117,14 @@ PUB PresetALS{}
     irchan(TRUE)
     visiblechan(TRUE)
 
-PUB PresetProx{}
+PUB Preset_Prox{}
 ' Preset settings for proximity sensor mode
     reset{}
     opmode(CONT_PS)
 
     ' XXX fill in
 
-PUB PresetUVI{}
+PUB Preset_UVI{}
 ' Preset settings for measuring UV Index
     reset{}
     opmode(CONT_ALS)
@@ -178,6 +191,15 @@ PUB IRChan(state): curr_state
     state := ((curr_state & core#EN_ALS_IR_MASK) | state) & core#CHLIST_MASK
     command (core#CMD_PARAM_SET, core#CHLIST, state)
 
+PUB IRDark(val): curr_val
+' Set IR sensor dark value (ADC word)
+'   Valid values: 0..65535
+'   Any other value returns the current setting
+    if (lookdown(val: 0..65535))
+        _ir_dark := val
+    else
+        return _ir_dark
+
 PUB IRData{}: ir_adc
 ' Return data from infra-red light channel
     readreg (core#ALS_IR_DATA0, 2, @ir_adc)
@@ -222,6 +244,21 @@ PUB IRRange(range): curr_rng
 
     range &= core#ALS_IR_ADC_MISC_MASK
     command(core#CMD_PARAM_SET, core#ALS_IR_ADC_MISC, range)
+
+PUB Lux{}: lx | vis, ir, lux1, lux2
+' Calculate illuminance, in tenths of a lux (1000 = 100.0 lx)
+    vis := ir := 0
+    { average 50 samples }
+    repeat 50
+        opmode(ONE_ALS)
+        vis += visibledata{}
+        ir += irdata{}
+    vis /= 50
+    ir /= 50
+
+    lux1 := u64.multdiv( (vis - _vis_dark), VIS_COEFF, 1000)
+    lux2 := u64.multdiv( (ir - _ir_dark), IR_COEFF, 1000)
+    return (0 #> (lux1 - lux2))                 ' clamp to min of 0
 
 PUB MeasureRate(rate): curr_rate
 ' Set time duration between measurements, in microseconds
@@ -277,6 +314,8 @@ PUB Reset{}
     hwkey{}
     time.msleep(10)
     opmode(ONE_PSALS)
+    irdark(IR_DARK_DEF)
+    visdark(VIS_DARK_DEF)
 
 PUB RevID{}: id
 ' Revision
@@ -340,6 +379,15 @@ PUB UVCoefficients(rw, coeffs): curr_coeffs
 PUB UVData{}: uv_adc
 ' Return data from UV index channel
     readreg(core#AUX_DATA0, 2, @uv_adc)
+
+PUB VisDark(val): curr_val
+' Set visible sensor dark value (ADC word)
+'   Valid values: 0..65535
+'   Any other value returns the current setting
+    if (lookdown(val: 0..65535))
+        _vis_dark := val
+    else
+        return _vis_dark
 
 PUB VisibleChan(state): curr_state
 ' Enable the visible ambient light source data channel
