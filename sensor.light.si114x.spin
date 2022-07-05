@@ -128,7 +128,7 @@ PUB Preset_UVI{}
 ' Preset settings for measuring UV Index
     reset{}
     opmode(CONT_ALS)
-
+    measurerate(32)
     ' These are the factory default part-to-part variance coefficients.
     ' They are restored by calling Reset(), but show them here so the user
     '   doesn't have to look far for them.
