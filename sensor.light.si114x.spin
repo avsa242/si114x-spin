@@ -159,13 +159,13 @@ PUB AUXChan(state): curr_state
     state := ((curr_state & core#EN_AUX_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB CalData(cal_word)
+PUB CalData(idx): cal_word
 ' Return a word of calibration data
 '   Valid values: 0..5
 '   Any other value is ignored
-    case cal_word
+    case idx
         0..5:
-            return _cal_data[cal_word]
+            return _cal_data[idx]
         other:
             return
 
@@ -175,6 +175,7 @@ PUB DeviceID{}: id
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
+    id := 0
     readreg(core#PART_ID, 1, @id)
 
 PUB IRChan(state): curr_state
@@ -321,6 +322,7 @@ PUB Reset{}
 PUB RevID{}: id
 ' Revision
 '   Returns: $00
+    id := 0
     readreg(core#REV_ID, 1, @id)
 
 PUB Running{}: flag
@@ -503,7 +505,7 @@ PRI hwKey{} | tmp
     tmp := core#HW_KEY_EXPECTED
     writereg(core#HW_KEY, 1, @tmp)
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register
         $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
@@ -520,7 +522,7 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
         other:
             return
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes from ptr_buff to the device
     case reg_nr
         $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
