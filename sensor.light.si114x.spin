@@ -70,9 +70,9 @@ OBJ
 #else
     i2c : "com.i2c"                             ' PASM I2C engine
 #endif
-    core: "core.con.si114x"
-    time: "time"
-    u64 : "math.unsigned64"
+    core: "core.con.si114x"                     ' HW-specific constants
+    time: "time"                                ' time delay methods
+    u64 : "math.unsigned64"                     ' unsigned 64-bit math
 
 PUB Null{}
 ' This is not a top-level object
@@ -116,6 +116,7 @@ PUB Preset_ALS{}
     uvchan(FALSE)
     irchan(TRUE)
     vischan(TRUE)
+    intmask(core.INTSRC_ALS)
 
 PUB Preset_Prox{}
 ' Preset settings for proximity sensor mode
@@ -134,7 +135,7 @@ PUB Preset_UVI{}
     '   doesn't have to look far for them.
     uvcoefficients(W, $00_01_6B_7B)
 
-    auxchan(FALSE)
+    auxchan(TRUE)
     uvchan(TRUE)
     irchan(FALSE)
     vischan(FALSE)
@@ -144,6 +145,15 @@ PUB Preset_UVI{}
 
     irgain(1)
     visgain(1)
+
+    intmask(core.INTSRC_ALS)
+
+PUB ALSDataReady{}: flag
+' Flag indicating ALS data is ready
+'   Returns: TRUE (-1) or FALSE (0)
+    flag := ((interrupt{} & core#ALS_INT_BITS) <> 0)
+    if (flag)
+        intclear(core#INTSRC_ALS)
 
 PUB AUXChan(state): curr_state
 ' Enable the auxiliary source data channel
@@ -190,6 +200,45 @@ PUB DeviceID{}: id
 '       $47: Si1147
     id := 0
     readreg(core#PART_ID, 1, @id)
+
+PUB IntClear(mask)
+' Clear interrupts
+'   Bits: 5..0 (set a bit to clear the interrupt)
+'       5: command interrupt
+'       4: proximity sensor ch3 interrupt
+'       3: proximity sensor ch2 interrupt
+'       2: proximity sensor ch1 interrupt
+'       0: ALS or UV measurement is ready
+    mask &= core#IRQ_STATUS_MASK
+    writereg(core#IRQ_STATUS, 1, @mask)
+
+PUB Interrupt{}: src
+' Interrupt source(s)
+'   Returns: interrupt mask
+'   Bits: 5..0 (set a bit to clear the interrupt)
+'       5: command interrupt
+'       4: proximity sensor ch3 interrupt
+'       3: proximity sensor ch2 interrupt
+'       2: proximity sensor ch1 interrupt
+'       0: ALS or UV measurement is ready
+    src := 0
+    readreg(core#IRQ_STATUS, 1, @src)
+
+PUB IntMask(mask): curr_mask
+' Set interrupt mask
+'   Bits: 4..0 (set a bit to assert INT pin when interrupt occurs)
+'       4: proximity sensor ch3 interrupt
+'       3: proximity sensor ch2 interrupt
+'       2: proximity sensor ch1 interrupt
+'       0: ALS or UV measurement is ready
+'   Any other value polls the chip and returns the current setting
+    case mask
+        %00000000..%11111111:
+            mask &= core#IRQ_ENABLE_MASK
+            writereg(core#IRQ_ENABLE, 1, @mask)
+        other:
+            curr_mask := 0
+            readreg(core#IRQ_ENABLE, 1, @curr_mask)
 
 PUB IRChan(state): curr_state
 ' Enable the IR ambient light source data channel
