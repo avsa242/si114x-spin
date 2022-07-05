@@ -2,7 +2,7 @@
     --------------------------------------------
     Filename: core.con.si114x.spin
     Author: Jesse Burt
-    Description: Low-level constants
+    Description: SI114x-specific constants
     Copyright (c) 2020
     Started Jun 01, 2019
     Updated Nov 21, 2020
