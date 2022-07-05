@@ -111,7 +111,7 @@ PUB Preset_ALS{}
 ' Preset settings for ambient light sensing mode
     reset{}                                     ' start with POR defaults
     opmode(CONT_ALS)
-    measurerate(32)
+    datarate(32_000_000)
     auxchan(FALSE)
     uvchan(FALSE)
     irchan(TRUE)
@@ -128,7 +128,7 @@ PUB Preset_UVI{}
 ' Preset settings for measuring UV Index
     reset{}
     opmode(CONT_ALS)
-    measurerate(32)
+    datarate(32_000_000)
     ' These are the factory default part-to-part variance coefficients.
     ' They are restored by calling Reset(), but show them here so the user
     '   doesn't have to look far for them.
@@ -168,6 +168,19 @@ PUB CalData(idx): cal_word
             return _cal_data[idx]
         other:
             return
+
+PUB DataRate(rate): curr_rate
+' Set measurement data rate, in milli-Hz
+'   Valid values: 489..32_000_000 (= 0.489Hz .. 32kHz)
+'   Any other value polls the chip and returns the current setting
+    case rate
+        489..32_000_000:
+            rate := (32_000_000 / rate)
+            writereg(core#MEAS_RATE0, 2, @rate)
+        other:
+            curr_rate := 0
+            readreg(core#MEAS_RATE0, 2, @curr_rate)
+            return (32_000_000 / curr_rate)
 
 PUB DeviceID{}: id
 ' Part ID of sensor
@@ -261,20 +274,6 @@ PUB Lux{}: lx | vis, ir, lux1, lux2
     lux1 := u64.multdiv( (vis - _vis_dark), VIS_COEFF, 1000)
     lux2 := u64.multdiv( (ir - _ir_dark), IR_COEFF, 1000)
     return (0 #> (lux1 - lux2))                 ' clamp to min of 0
-
-PUB MeasureRate(rate): curr_rate
-' Set time duration between measurements, in microseconds
-'   Valid values: 31..2047969 (rounded to nearest multiple of 31.25)
-'   Any other value polls the chip and returns the current setting
-    case rate
-        31..2047969:                            ' 31.25uS..2047968.75uS
-            rate *= 1_00                        ' Scaling, to preseve accuracy
-            rate /= 31_25
-            writereg(core#MEAS_RATE0, 2, @rate)
-        other:
-            curr_rate := 0
-            readreg(core#MEAS_RATE0, 2, @curr_rate)
-            return ((curr_rate * 31_25) / 100)
 
 PUB OpMode(mode): curr_mode
 ' Set operation mode
