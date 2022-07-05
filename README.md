@@ -42,7 +42,6 @@ P2/SPIN2:
 
 * Very early in development - may malfunction, or outright fail to build
 * Doesn't support proximity sensor function
-* Doesn't support interrupts
 * Doesn't support alternate slave address usage/programming
 * Doesn't support temp sensor/Vdd/Vss reading (not currently planned)
 * Measurement calibration/correction/calculation unverified
