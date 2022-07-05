@@ -100,7 +100,7 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ): status
 PUB Stop{}
 ' Stop I2C engine and clear cached data
     i2c.deinit{}
-    wordfill(@_cal_data, 0, 6)
+    wordfill(@_cal_data, 0, 8)
     _opmode := 0
 
 PUB Defaults{}
@@ -154,9 +154,9 @@ PUB AUXChan(state): curr_state
         0, 1:
             state := ||(state) << core#EN_AUX
         other:
-            return ((curr_state >> core#EN_AUX) & %1) == 1
+            return (((curr_state >> core#EN_AUX) & 1) == 1)
 
-    state := ((curr_state & core#EN_AUX_MASK) | state) & core#CHLIST_MASK
+    state := ((curr_state & core#EN_AUX_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB CalData(cal_word)
@@ -186,9 +186,9 @@ PUB IRChan(state): curr_state
         0, 1:
             state := ||(state) << core#EN_ALS_IR
         other:
-            return ((curr_state >> core#EN_ALS_IR) & %1) == 1
+            return (((curr_state >> core#EN_ALS_IR) & 1) == 1)
 
-    state := ((curr_state & core#EN_ALS_IR_MASK) | state) & core#CHLIST_MASK
+    state := ((curr_state & core#EN_ALS_IR_MASK) | state)
     command (core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB IRDark(val): curr_val
@@ -271,7 +271,7 @@ PUB MeasureRate(rate): curr_rate
             rate *= 1_00                        ' Scaling, to preseve accuracy
             rate /= 31_25
         other:
-            return (curr_rate * 31_25) / 100
+            return ((curr_rate * 31_25) / 100)
 
     writereg(core#MEAS_RATE0, 2, @rate)
 
@@ -357,9 +357,9 @@ PUB UVChan(state): curr_state
         0, 1:
             state := ||(state) << core#EN_UV
         other:
-            return ((curr_state >> core#EN_UV) & %1) == 1
+            return (((curr_state >> core#EN_UV) & 1) == 1)
 
-    state := ((curr_state & core#EN_UV_MASK) | state) & core#CHLIST_MASK
+    state := ((curr_state & core#EN_UV_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB UVCoefficients(rw, coeffs): curr_coeffs
@@ -398,9 +398,9 @@ PUB VisibleChan(state): curr_state
         0, 1:
             state := ||(state) << core#EN_ALS_VIS
         other:
-            return ((curr_state >> core#EN_ALS_VIS) & %1) == 1
+            return (((curr_state >> core#EN_ALS_VIS) & 1) == 1)
 
-    state := ((curr_state & core#EN_ALS_VIS_MASK) | state) & core#CHLIST_MASK
+    state := ((curr_state & core#EN_ALS_VIS_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
 PUB VisibleData{}: vis_adc
@@ -530,22 +530,24 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
 
 DAT
 {
-    --------------------------------------------------------------------------------------------------------
-    TERMS OF USE: MIT License
+TERMS OF USE: MIT License
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-    associated documentation files (the "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
-    following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all copies or substantial
-    portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-    LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-    --------------------------------------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 }
+
