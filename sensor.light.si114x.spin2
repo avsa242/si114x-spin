@@ -1,12 +1,12 @@
 {
     --------------------------------------------
-    Filename: sensor.light.si114x.i2c.spin2
+    Filename: sensor.light.si114x.spin2
     Author: Jesse Burt
     Description: Driver for the Silicon Labs Si114[5|6|7] series
         Proximity/UV/Amblient light sensor IC (P2 version)
     Copyright (c) 2022
     Started Oct 24, 2021
-    Updated Jul 5, 2022
+    Updated Sep 19, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -66,10 +66,10 @@ OBJ
     core: "core.con.si114x"                     ' HW-specific constants
     u64 : "math.unsigned64"                     ' unsigned 64-bit math
 
-PUB Null()
+PUB null()
 ' This is not a top-level object
 
-PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ=DEF_HZ): status
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ=DEF_HZ): status
 ' Start using custom I2C pins and bus frequency
     if lookdown(SCL_PIN: 0..63) and lookdown(SDA_PIN: 0..63) and {
 }   I2C_HZ <= core.I2C_MAX_FREQ
@@ -85,17 +85,17 @@ PUB Startx(SCL_PIN, SDA_PIN, I2C_HZ=DEF_HZ): status
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
 
-PUB Stop()
+PUB stop()
 ' Stop I2C engine and clear cached data
     i2c.deinit()
     wordfill(@_cal_data, 0, 8)
     _opmode := 0
 
-PUB Defaults()
+PUB defaults()
 ' Factory default settings
     reset()
 
-PUB Preset_ALS()
+PUB preset_als()
 ' Preset settings for ambient light sensing mode
     reset()                                     ' start with POR defaults
     opmode(CONT_ALS)
@@ -106,14 +106,14 @@ PUB Preset_ALS()
     vischan(TRUE)
     intmask(core.INTSRC_ALS)
 
-PUB Preset_Prox()
+PUB preset_prox()
 ' Preset settings for proximity sensor mode
     reset()
     opmode(CONT_PS)
 
     ' XXX fill in
 
-PUB Preset_UVI()
+PUB preset_uvi()
 ' Preset settings for measuring UV Index
     reset()
     opmode(CONT_ALS)
@@ -136,14 +136,14 @@ PUB Preset_UVI()
 
     intmask(core.INTSRC_ALS)
 
-PUB ALSDataReady(): flag
+PUB alsdataready(): flag
 ' Flag indicating ALS data is ready
 '   Returns: TRUE (-1) or FALSE (0)
     flag := ((interrupt() & core.ALS_INT_BITS) <> 0)
     if (flag)
         intclear(core.INTSRC_ALS)
 
-PUB AUXChan(state=-2): curr_state
+PUB auxchan(state=-2): curr_state
 ' Enable the auxiliary source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -157,7 +157,7 @@ PUB AUXChan(state=-2): curr_state
     state := ((curr_state & core.EN_AUX_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
-PUB CalData(idx): cal_word
+PUB caldata(idx): cal_word
 ' Return a word of calibration data
 '   Valid values: 0..5
 '   Any other value is ignored
@@ -167,7 +167,7 @@ PUB CalData(idx): cal_word
         other:
             return
 
-PUB DataRate(rate=-2): curr_rate
+PUB datarate(rate=-2): curr_rate
 ' Set measurement data rate, in milli-Hz
 '   Valid values: 489..32_000_000 (= 0.489Hz .. 32kHz)
 '   Any other value polls the chip and returns the current setting
@@ -180,7 +180,7 @@ PUB DataRate(rate=-2): curr_rate
             readreg(core.MEAS_RATE0, 2, @curr_rate)
             return (32_000_000 / curr_rate)
 
-PUB DeviceID(): id
+PUB deviceid(): id
 ' Part ID of sensor
 '   Returns:
 '       $45: Si1145
@@ -189,7 +189,7 @@ PUB DeviceID(): id
     id := 0
     readreg(core.PART_ID, 1, @id)
 
-PUB IntClear(mask)
+PUB intclear(mask)
 ' Clear interrupts
 '   Bits: 5..0 (set a bit to clear the interrupt)
 '       5: command interrupt
@@ -200,7 +200,7 @@ PUB IntClear(mask)
     mask &= core.IRQ_STATUS_MASK
     writereg(core.IRQ_STATUS, 1, @mask)
 
-PUB Interrupt(): src
+PUB interrupt(): src
 ' Interrupt source(s)
 '   Returns: interrupt mask
 '   Bits: 5..0 (set a bit to clear the interrupt)
@@ -212,7 +212,7 @@ PUB Interrupt(): src
     src := 0
     readreg(core.IRQ_STATUS, 1, @src)
 
-PUB IntMask(mask=-2): curr_mask
+PUB intmask(mask=-2): curr_mask
 ' Set interrupt mask
 '   Bits: 4..0 (set a bit to assert INT pin when interrupt occurs)
 '       4: proximity sensor ch3 interrupt
@@ -228,7 +228,7 @@ PUB IntMask(mask=-2): curr_mask
             curr_mask := 0
             readreg(core.IRQ_ENABLE, 1, @curr_mask)
 
-PUB IRChan(state=-2): curr_state
+PUB irchan(state=-2): curr_state
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -242,7 +242,7 @@ PUB IRChan(state=-2): curr_state
     state := ((curr_state & core.EN_ALS_IR_MASK) | state)
     command (core.CMD_PARAM_SET, core.CHLIST, state)
 
-PUB IRDark(val=-2): curr_val
+PUB irdark(val=-2): curr_val
 ' Set IR sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
@@ -251,11 +251,11 @@ PUB IRDark(val=-2): curr_val
     else
         return _ir_dark
 
-PUB IRData(): ir_adc
+PUB irdata(): ir_adc
 ' Return data from infra-red light channel
     readreg (core.ALS_IR_DATA0, 2, @ir_adc)
 
-PUB IRGain(gain=-2): curr_gain
+PUB irgain(gain=-2): curr_gain
 ' Gain factor of infra-red light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
@@ -276,14 +276,14 @@ PUB IRGain(gain=-2): curr_gain
     ' to ADC recovery period, per datasheet
     command(core.CMD_PARAM_SET, core.ALS_IR_ADC_COUNTER, !gain)
 
-PUB IROverflow(): flag
+PUB iroverflow(): flag
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg (core.RESPONSE, 1, @flag)
     return (flag == core.ALS_IR_ADC_OVERFLOW)
 
-PUB IRRange(range=-2): curr_rng
+PUB irrange(range=-2): curr_rng
 ' Set measurement range of infra-red light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
@@ -297,7 +297,7 @@ PUB IRRange(range=-2): curr_rng
     range &= core.ALS_IR_ADC_MISC_MASK
     command(core.CMD_PARAM_SET, core.ALS_IR_ADC_MISC, range)
 
-PUB Lux(): lx | vis, ir, lux1, lux2
+PUB lux(): lx | vis, ir, lux1, lux2
 ' Calculate illuminance, in tenths of a lux (1000 = 100.0 lx)
     vis := ir := 0
     { average 50 samples }
@@ -312,7 +312,7 @@ PUB Lux(): lx | vis, ir, lux1, lux2
     lux2 := u64.multdiv( (ir - _ir_dark), IR_COEFF, 1000)
     return (0 #> (lux1 - lux2))                 ' clamp to min of 0
 
-PUB OpMode(mode=-2): curr_mode
+PUB opmode(mode=-2): curr_mode
 ' Set operation mode
 '   Valid values:
 '       ONE_PS, ONE_ALS, ONE_PSALS: Force a single PS, ALS or PS+ALS measurement
@@ -330,7 +330,7 @@ PUB OpMode(mode=-2): curr_mode
 
     command(mode, 0, 0)
 
-PUB PowerState(): curr_state
+PUB powerstate(): curr_state
 ' Chip status
 '   Returns:
 '       RUN (%100): Device is awake
@@ -339,13 +339,13 @@ PUB PowerState(): curr_state
     curr_state := 0
     readreg(core.CHIP_STAT, 1, @curr_state)
 
-PUB ReadCalData()
+PUB readcaldata()
 ' Read calibration data into 6-word array
     wordfill(@_cal_data, 0, 6)
     command(core.CMD_GET_CAL, 0, 0)
     readreg(core.CAL_DATA, 12, @_cal_data)
 
-PUB Reset()
+PUB reset()
 ' Perform soft-reset
     command(core.CMD_RESET, 0, 0)
     waitms(10)
@@ -355,27 +355,27 @@ PUB Reset()
     irdark(IR_DARK_DEF)
     visdark(VIS_DARK_DEF)
 
-PUB RevID(): id
+PUB revid(): id
 ' Revision
 '   Returns: $00
     id := 0
     readreg(core.REV_ID, 1, @id)
 
-PUB Running(): flag
+PUB running(): flag
 ' Flag indicating device is running/awake
 '   Returns: TRUE (-1) if device is awake, FALSE (0) otherwise
     flag := 0
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_RUNNING)
 
-PUB SeqID(): seq_rev
+PUB seqid(): seq_rev
 ' Sequencer revision
 '   Returns known values:
 '       $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
     seq_rev := 0
     readreg(core.SEQ_ID, 1, @seq_rev)
 
-PUB Sleeping(): flag
+PUB sleeping(): flag
 ' Flag indicating device is sleeping
 '   Returns:    TRUE (-1) if device is in its lowest power state
 '               FALSE (0) otherwise
@@ -383,7 +383,7 @@ PUB Sleeping(): flag
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_SLEEP)
 
-PUB Suspended(): flag
+PUB suspended(): flag
 ' Suspended status
 '   Returns:    TRUE (-1) if device is in a low-power state,
 '               FALSE (0) otherwise
@@ -391,7 +391,7 @@ PUB Suspended(): flag
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_SUSPEND)
 
-PUB UVChan(state=-2): curr_state
+PUB uvchan(state=-2): curr_state
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -405,7 +405,7 @@ PUB UVChan(state=-2): curr_state
     state := ((curr_state & core.EN_UV_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
-PUB UVCoefficients(rw, coeffs): curr_coeffs
+PUB uvcoefficients(rw, coeffs): curr_coeffs
 ' Set coefficients used to calculate UV index readings
 '   Valid values:
 '       rw: READ (0), WRITE (1)
@@ -419,12 +419,12 @@ PUB UVCoefficients(rw, coeffs): curr_coeffs
         1:                                      ' Write
             writereg(core.UCOEF0, 4, @coeffs)
 
-PUB UVData(): uv_adc
+PUB uvdata(): uv_adc
 ' Return data from UV index channel
     uv_adc := 0
     readreg(core.AUX_DATA0, 2, @uv_adc)
 
-PUB VisDark(val=-2): curr_val
+PUB visdark(val=-2): curr_val
 ' Set evisible sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
@@ -433,7 +433,7 @@ PUB VisDark(val=-2): curr_val
     else
         return _vis_dark
 
-PUB VisChan(state=-2): curr_state
+PUB vischan(state=-2): curr_state
 ' Enable the visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -447,12 +447,12 @@ PUB VisChan(state=-2): curr_state
     state := ((curr_state & core.EN_ALS_VIS_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
-PUB VisData(): vis_adc
+PUB visdata(): vis_adc
 ' Return data from visible light channel
     vis_adc := 0
     readreg(core.ALS_VIS_DATA0, 2, @vis_adc)
 
-PUB VisGain(gain=-2): curr_gain
+PUB visgain(gain=-2): curr_gain
 ' Gain factor of visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
@@ -473,14 +473,14 @@ PUB VisGain(gain=-2): curr_gain
     ' to ADC recovery period, per datasheet
     command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_COUNTER, !gain)
 
-PUB VisOverflow(): flag
+PUB visoverflow(): flag
 ' Flag indicating visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg(core.RESPONSE, 1, @flag)
     return (flag == core.ALS_VIS_ADC_OVERFLOW)
 
-PUB VisRange(range=-2): curr_rng
+PUB visrange(range=-2): curr_rng
 ' Set measurement range of visible light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
@@ -494,7 +494,7 @@ PUB VisRange(range=-2): curr_rng
 
     command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_MISC, range)
 
-PRI clrResp(): resp | tmp
+PRI clrresp(): resp | tmp
 ' Clear response register
 '   Returns: response, after clearing
     resp := 0
@@ -536,12 +536,12 @@ PRI command(cmd, param, args): resp | tmp
             readreg(core.RESPONSE, 1, @resp) ' XXX device NAK on bus if cmd was reset...must wait?
             return
 
-PRI hwKey() | tmp
+PRI hwkey() | tmp
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
     tmp := core.HW_KEY_EXPECTED
     writereg(core.HW_KEY, 1, @tmp)
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register
         $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
@@ -558,7 +558,7 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         other:
             return
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes from ptr_buff to the device
     case reg_nr
         $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
@@ -572,27 +572,23 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         other:
             return
 
-
 DAT
 {
-TERMS OF USE: MIT License
+Copyright 2022 Jesse Burt
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 }
 
