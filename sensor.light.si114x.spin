@@ -5,7 +5,7 @@
     Description: Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
     Copyright (c) 2022
     Started Jun 1, 2019
-    Updated Sep 25, 2022
+    Updated Sep 27, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -114,7 +114,7 @@ PUB preset_als{}
     aux_chan_ena(FALSE)
     uv_chan_ena(FALSE)
     ir_chan_ena(TRUE)
-    vis_chan_ena(TRUE)
+    white_chan_ena(TRUE)
     int_mask(core.INTSRC_ALS)
 
 PUB preset_prox{}
@@ -132,18 +132,18 @@ PUB preset_uvi{}
     ' These are the factory default part-to-part variance coefficients.
     ' They are restored by calling Reset(), but show them here so the user
     '   doesn't have to look far for them.
-    uv_coeffs(W, $00_01_6B_7B)
+    uv_set_coeffs($00_01_6B_7B)
 
     aux_chan_ena(TRUE)
     uv_chan_ena(TRUE)
     ir_chan_ena(FALSE)
-    vis_chan_ena(FALSE)
+    white_chan_ena(FALSE)
 
     ir_range(HIGH)
-    vis_range(HIGH)
+    white_range(HIGH)
 
     ir_gain(1)
-    vis_gain(1)
+    white_gain(1)
 
     int_mask(core.INTSRC_ALS)
 
@@ -253,7 +253,7 @@ PUB ir_chan_ena(state): curr_state
     state := ((curr_state & core#EN_ALS_IR_MASK) | state)
     command (core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB ir_dark(val): curr_val
+PUB ir_bias(val): curr_val
 ' Set IR sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
@@ -314,7 +314,7 @@ PUB lux{}: lx | vis, ir, lux1, lux2
     { average 50 samples }
     repeat 50
         opmode(ONE_ALS)
-        vis += vis_data{}
+        vis += white_data{}
         ir += ir_data{}
     vis /= 50
     ir /= 50
@@ -363,8 +363,8 @@ PUB reset{}
     hwkey{}
     time.msleep(10)
     opmode(ONE_PSALS)
-    ir_dark(IR_DARK_DEF)
-    vis_dark(VIS_DARK_DEF)
+    ir_bias(IR_DARK_DEF)
+    white_bias(VIS_DARK_DEF)
 
 PUB rev_id{}: id
 ' Revision
@@ -416,27 +416,28 @@ PUB uv_chan_ena(state): curr_state
     state := ((curr_state & core#EN_UV_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB uv_coeffs(rw, coeffs): curr_coeffs
+PUB uv_coeffs{}: curr_coeffs
+' Get coefficients used to calculate UV index readings
+'   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
+'       UCOEF3_UCOEF2_UCOEF1_UCOEF0
+    curr_coeffs := 0
+    readreg(core#UCOEF0, 4, @curr_coeffs)
+
+PUB uv_set_coeffs(coeffs)
 ' Set coefficients used to calculate UV index readings
 '   Valid values:
 '       rw: READ (0), WRITE (1)
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    case rw
-        0:                                      ' Read
-            curr_coeffs := 0
-            readreg(core#UCOEF0, 4, @curr_coeffs)
-            return
-        1:                                      ' Write
-            writereg(core#UCOEF0, 4, @coeffs)
+    writereg(core#UCOEF0, 4, @coeffs)
 
 PUB uv_data{}: uv_adc
 ' Return data from UV index channel
     uv_adc := 0
     readreg(core#AUX_DATA0, 2, @uv_adc)
 
-PUB vis_dark(val): curr_val
-' Set evisible sensor dark value (ADC word)
+PUB white_bias(val): curr_val
+' Set white/visible sensor bias/dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
     if (lookdown(val: 0..65535))
@@ -444,8 +445,8 @@ PUB vis_dark(val): curr_val
     else
         return _vis_dark
 
-PUB vis_chan_ena(state): curr_state
-' Enable the visible ambient light source data channel
+PUB white_chan_ena(state): curr_state
+' Enable the white/visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     curr_state := command(core#CMD_PARAM_QUERY, core#CHLIST, 0)
@@ -458,13 +459,13 @@ PUB vis_chan_ena(state): curr_state
     state := ((curr_state & core#EN_ALS_VIS_MASK) | state)
     command(core#CMD_PARAM_SET, core#CHLIST, state)
 
-PUB vis_data{}: vis_adc
-' Return data from visible light channel
+PUB white_data{}: vis_adc
+' Return data from white/visible light channel
     vis_adc := 0
     readreg(core#ALS_VIS_DATA0, 2, @vis_adc)
 
-PUB vis_gain(gain): curr_gain
-' Gain factor of visible light sensor
+PUB white_gain(gain): curr_gain
+' Gain factor of white/visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
     curr_gain := 0
@@ -484,15 +485,15 @@ PUB vis_gain(gain): curr_gain
     ' to ADC recovery period, per datasheet
     command(core#CMD_PARAM_SET, core#ALS_VIS_ADC_COUNTER, !gain)
 
-PUB vis_overflow{}: flag
-' Flag indicating visible light data conversion has overflowed
+PUB white_overflow{}: flag
+' Flag indicating white/visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg(core#RESPONSE, 1, @flag)
     return (flag == core#ALS_VIS_ADC_OVERFLOW)
 
-PUB vis_range(range): curr_rng
-' Set measurement range of visible light sensor
+PUB white_range(range): curr_rng
+' Set measurement range of white/visible light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)

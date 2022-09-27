@@ -6,7 +6,7 @@
         Ambient light sensing data
     Copyright (c) 2022
     Started Jul 5, 2022
-    Updated Sep 25, 2022
+    Updated Sep 27, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -40,7 +40,7 @@ PUB main{}
     repeat
         ser.position(0, 3)
         ser.printf1(string("IR data: %04.4x\n\r"), si.ir_data{})
-        ser.printf1(string("Visible data: %04.4x"), si.vis_data{})
+        ser.printf1(string("White data: %04.4x"), si.white_data{})
 
 PUB setup{}
 
