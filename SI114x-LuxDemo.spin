@@ -6,7 +6,7 @@
         Display illuminance in lux
     Copyright (c) 2022
     Started Jul 4, 2022
-    Updated Sep 25, 2022
+    Updated Oct 16, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -27,7 +27,7 @@ CON
 
 OBJ
 
-    cfg     : "core.con.boardcfg.flip"
+    cfg     : "boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     si      : "sensor.light.si114x"
