@@ -1,14 +1,12 @@
 {
-    --------------------------------------------
-    Filename: sensor.light.si114x.spin2
-    Author: Jesse Burt
-    Description: Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
-        (P2 version)
-    Copyright (c) 2022
-    Started Oct 24, 2021
-    Updated Nov 9, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       sensor.light.si114x.spin2
+    Description:    Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
+    Author:         Jesse Burt
+    Started:        Oct 24, 2021
+    Updated:        Jun 4, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -62,28 +60,30 @@ VAR
 
 OBJ
 
-    i2c : "com.i2c"                             ' I2C engine
-    core: "core.con.si114x"                     ' HW-specific constants
-    u64 : "math.unsigned64"                     ' unsigned 64-bit math
+    i2c:    "com.i2c"                           ' I2C engine
+    core:   "core.con.si114x"                   ' HW-specific constants
+    u64:    "math.unsigned64"                     ' unsigned 64-bit math
+
 
 PUB null()
 ' This is not a top-level object
 
-PUB startx(SCL_PIN, SDA_PIN, I2C_HZ=DEF_HZ): status
+
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
 ' Start using custom I2C pins and bus frequency
-    if lookdown(SCL_PIN: 0..63) and lookdown(SDA_PIN: 0..63) and {
-}   I2C_HZ <= core.I2C_MAX_FREQ
-        if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
+    if ( lookdown(SCL_PIN: 0..63) and lookdown(SDA_PIN: 0..63) )
+        if ( status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ) )
             waitus(core.T_POR)
-            if i2c.present(SLAVE_WR)            ' check device bus presence
-                if lookdown(dev_id(): core.PART_ID_RESP_1145,{
-                } core.PART_ID_RESP_1146, core.PART_ID_RESP_1147)
-                    reset()
-                    return
+            if ( lookdown(dev_id(): core.PART_ID_RESP_1145, ...
+                                    core.PART_ID_RESP_1146, ...
+                                    core.PART_ID_RESP_1147 )
+                reset()
+                return
     ' if this point is reached, something above failed
     ' Double check I/O pin assignments, connections, power
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
+
 
 PUB stop()
 ' Stop I2C engine and clear cached data
@@ -91,9 +91,11 @@ PUB stop()
     wordfill(@_cal_data, 0, 8)
     _opmode := 0
 
+
 PUB defaults()
 ' Factory default settings
     reset()
+
 
 PUB preset_als()
 ' Preset settings for ambient light sensing mode
@@ -106,12 +108,14 @@ PUB preset_als()
     white_chan_ena(TRUE)
     int_mask(core.INTSRC_ALS)
 
+
 PUB preset_prox()
 ' Preset settings for proximity sensor mode
     reset()
     opmode(CONT_PS)
 
     ' XXX fill in
+
 
 PUB preset_uvi()
 ' Preset settings for measuring UV Index
@@ -136,6 +140,7 @@ PUB preset_uvi()
 
     int_mask(core.INTSRC_ALS)
 
+
 PUB als_data_rate(rate=-2): curr_rate
 ' Set measurement data rate, in milli-Hz
 '   Valid values: 489..32_000_000 (= 0.489Hz .. 32kHz)
@@ -149,12 +154,14 @@ PUB als_data_rate(rate=-2): curr_rate
             readreg(core.MEAS_RATE0, 2, @curr_rate)
             return (32_000_000 / curr_rate)
 
+
 PUB als_data_rdy(): flag
 ' Flag indicating ALS data is ready
 '   Returns: TRUE (-1) or FALSE (0)
     flag := ((interrupt() & core.ALS_INT_BITS) <> 0)
     if (flag)
         int_clear(core.INTSRC_ALS)
+
 
 PUB aux_chan_ena(state=-2): curr_state
 ' Enable the auxiliary source data channel
@@ -170,6 +177,7 @@ PUB aux_chan_ena(state=-2): curr_state
     state := ((curr_state & core.EN_AUX_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
+
 PUB cal_data(idx): cal_word
 ' Return a word of calibration data
 '   Valid values: 0..5
@@ -180,6 +188,7 @@ PUB cal_data(idx): cal_word
         other:
             return
 
+
 PUB dev_id(): id
 ' Part ID of sensor
 '   Returns:
@@ -188,6 +197,7 @@ PUB dev_id(): id
 '       $47: Si1147
     id := 0
     readreg(core.PART_ID, 1, @id)
+
 
 PUB int_clear(mask)
 ' Clear interrupts
@@ -200,6 +210,7 @@ PUB int_clear(mask)
     mask &= core.IRQ_STATUS_MASK
     writereg(core.IRQ_STATUS, 1, @mask)
 
+
 PUB interrupt(): src
 ' Interrupt source(s)
 '   Returns: interrupt mask
@@ -211,6 +222,7 @@ PUB interrupt(): src
 '       0: ALS or UV measurement is ready
     src := 0
     readreg(core.IRQ_STATUS, 1, @src)
+
 
 PUB int_mask(mask=-2): curr_mask
 ' Set interrupt mask
@@ -228,6 +240,7 @@ PUB int_mask(mask=-2): curr_mask
             curr_mask := 0
             readreg(core.IRQ_ENABLE, 1, @curr_mask)
 
+
 PUB ir_chan_ena(state=-2): curr_state
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
@@ -242,6 +255,7 @@ PUB ir_chan_ena(state=-2): curr_state
     state := ((curr_state & core.EN_ALS_IR_MASK) | state)
     command (core.CMD_PARAM_SET, core.CHLIST, state)
 
+
 PUB ir_bias(val=-2): curr_val
 ' Set IR sensor dark value (ADC word)
 '   Valid values: 0..65535
@@ -251,9 +265,11 @@ PUB ir_bias(val=-2): curr_val
     else
         return _ir_dark
 
+
 PUB ir_data(): ir_adc
 ' Return data from infra-red light channel
     readreg (core.ALS_IR_DATA0, 2, @ir_adc)
+
 
 PUB ir_gain(gain=-2): curr_gain
 ' Gain factor of infra-red light sensor
@@ -267,8 +283,7 @@ PUB ir_gain(gain=-2): curr_gain
         64: gain := %110
         128: gain := %111
         other:
-            return lookupz(curr_gain & core.ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0,{
-            } 16, 0, 64, 128)
+            return lookupz(curr_gain & core.ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
 
     command(core.CMD_PARAM_SET, core.ALS_IR_ADCGAIN, gain)
     gain <<= core.IR_ADC_REC
@@ -276,12 +291,14 @@ PUB ir_gain(gain=-2): curr_gain
     ' to ADC recovery period, per datasheet
     command(core.CMD_PARAM_SET, core.ALS_IR_ADC_COUNTER, !gain)
 
+
 PUB ir_overflow(): flag
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg (core.RESPONSE, 1, @flag)
     return (flag == core.ALS_IR_ADC_OVERFLOW)
+
 
 PUB ir_range(range=-2): curr_rng
 ' Set measurement range of infra-red light sensor
@@ -296,6 +313,7 @@ PUB ir_range(range=-2): curr_rng
 
     range &= core.ALS_IR_ADC_MISC_MASK
     command(core.CMD_PARAM_SET, core.ALS_IR_ADC_MISC, range)
+
 
 PUB lux(): lx | vis, ir, lux1, lux2
 ' Calculate illuminance, in tenths of a lux (1000 = 100.0 lx)
@@ -312,6 +330,7 @@ PUB lux(): lx | vis, ir, lux1, lux2
     lux2 := u64.multdiv( (ir - _ir_dark), IR_COEFF, 1000)
     return (0 #> (lux1 - lux2))                 ' clamp to min of 0
 
+
 PUB opmode(mode=-2): curr_mode
 ' Set operation mode
 '   Valid values:
@@ -321,14 +340,14 @@ PUB opmode(mode=-2): curr_mode
 '   Valid values return response status from chip
 '   Any other value returns the last setting (shadow register)
     case mode
-        ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS,{
-        } PAUSE_ALS, PAUSE_PSALS:
+        ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS, PAUSE_ALS, PAUSE_PSALS:
             _opmode := mode
         other:
             return _opmode                      ' not readable from sensor;
                                                 ' keep a local copy
 
     command(mode, 0, 0)
+
 
 PUB power_state(): curr_state
 ' Chip status
@@ -339,11 +358,13 @@ PUB power_state(): curr_state
     curr_state := 0
     readreg(core.CHIP_STAT, 1, @curr_state)
 
+
 PUB rd_cal_data()
 ' Read calibration data into 6-word array
     wordfill(@_cal_data, 0, 6)
     command(core.CMD_GET_CAL, 0, 0)
     readreg(core.CAL_DATA, 12, @_cal_data)
+
 
 PUB reset()
 ' Perform soft-reset
@@ -355,11 +376,13 @@ PUB reset()
     ir_bias(IR_DARK_DEF)
     white_bias(VIS_DARK_DEF)
 
+
 PUB rev_id(): id
 ' Revision
 '   Returns: $00
     id := 0
     readreg(core.REV_ID, 1, @id)
+
 
 PUB running(): flag
 ' Flag indicating device is running/awake
@@ -368,12 +391,14 @@ PUB running(): flag
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_RUNNING)
 
+
 PUB seq_id(): seq_rev
 ' Sequencer revision
 '   Returns known values:
 '       $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
     seq_rev := 0
     readreg(core.SEQ_ID, 1, @seq_rev)
+
 
 PUB sleeping(): flag
 ' Flag indicating device is sleeping
@@ -383,6 +408,7 @@ PUB sleeping(): flag
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_SLEEP)
 
+
 PUB suspended(): flag
 ' Suspended status
 '   Returns:    TRUE (-1) if device is in a low-power state,
@@ -390,6 +416,7 @@ PUB suspended(): flag
     flag := 0
     readreg(core.CHIP_STAT, 1, @flag)
     return (flag == core.CHIP_STAT_SUSPEND)
+
 
 PUB uv_chan_ena(state=-2): curr_state
 ' Enable the UV index source data channel
@@ -405,12 +432,14 @@ PUB uv_chan_ena(state=-2): curr_state
     state := ((curr_state & core.EN_UV_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
+
 PUB uv_coeffs(): curr_coeffs
 ' Get coefficients used to calculate UV index readings
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
     curr_coeffs := 0
-    readreg(core#UCOEF0, 4, @curr_coeffs)
+    readreg(core.UCOEF0, 4, @curr_coeffs)
+
 
 PUB uv_set_coeffs(coeffs)
 ' Set coefficients used to calculate UV index readings
@@ -418,12 +447,14 @@ PUB uv_set_coeffs(coeffs)
 '       rw: READ (0), WRITE (1)
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    writereg(core#UCOEF0, 4, @coeffs)
+    writereg(core.UCOEF0, 4, @coeffs)
+
 
 PUB uv_data(): uv_adc
 ' Return data from UV index channel
     uv_adc := 0
     readreg(core.AUX_DATA0, 2, @uv_adc)
+
 
 PUB white_bias(val=-2): curr_val
 ' Set white/visible sensor bias/dark value (ADC word)
@@ -433,6 +464,7 @@ PUB white_bias(val=-2): curr_val
         _vis_dark := val
     else
         return _vis_dark
+
 
 PUB white_chan_ena(state=-2): curr_state
 ' Enable the white/visible ambient light source data channel
@@ -448,10 +480,12 @@ PUB white_chan_ena(state=-2): curr_state
     state := ((curr_state & core.EN_ALS_VIS_MASK) | state)
     command(core.CMD_PARAM_SET, core.CHLIST, state)
 
+
 PUB white_data(): vis_adc
 ' Return data from white/visible light channel
     vis_adc := 0
     readreg(core.ALS_VIS_DATA0, 2, @vis_adc)
+
 
 PUB white_gain(gain=-2): curr_gain
 ' Gain factor of white/visible light sensor
@@ -465,8 +499,7 @@ PUB white_gain(gain=-2): curr_gain
         64: gain := %110
         128: gain := %111
         other:
-            return lookupz(curr_gain & core.ALS_VIS_ADCGAIN_BITS: 1, 0, 0, 0,{
-            } 16, 0, 64, 128)
+            return lookupz(curr_gain & core.ALS_VIS_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
 
     command(core.CMD_PARAM_SET, core.ALS_VIS_ADCGAIN, gain)
     gain <<= core.VIS_ADC_REC
@@ -474,12 +507,14 @@ PUB white_gain(gain=-2): curr_gain
     ' to ADC recovery period, per datasheet
     command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_COUNTER, !gain)
 
+
 PUB white_overflow(): flag
 ' Flag indicating white/visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     flag := 0
     readreg(core.RESPONSE, 1, @flag)
     return (flag == core.ALS_VIS_ADC_OVERFLOW)
+
 
 PUB white_range(range=-2): curr_rng
 ' Set measurement range of white/visible light sensor
@@ -495,6 +530,7 @@ PUB white_range(range=-2): curr_rng
 
     command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_MISC, range)
 
+
 PRI clr_resp(): resp | tmp
 ' Clear response register
 '   Returns: response, after clearing
@@ -502,6 +538,7 @@ PRI clr_resp(): resp | tmp
     tmp := core.CMD_NOP
     writereg(core.COMMAND, 1, @tmp)
     readreg(core.RESPONSE, 1, @resp)
+
 
 PRI command(cmd, param, args): resp | tmp
 ' Send command with parameters to device
@@ -525,10 +562,9 @@ PRI command(cmd, param, args): resp | tmp
                 readreg(core.RESPONSE, 1, @resp)
             while (resp == 0)
             return
-        core.CMD_NOP, core.CMD_RESET, core.CMD_BUSADDR, core.CMD_PS_FORCE,{
-        } core.CMD_GET_CAL, core.CMD_ALS_FORCE, core.CMD_PSALS_FORCE,{
-        } core.CMD_PS_PAUSE, core.CMD_ALS_PAUSE, core.CMD_PSALS_PAUSE,{
-        } core.CMD_PS_AUTO, core.CMD_ALS_AUTO, core.CMD_PSALS_AUTO:
+        core.CMD_NOP, core.CMD_RESET, core.CMD_BUSADDR, core.CMD_PS_FORCE, core.CMD_GET_CAL, ...
+        core.CMD_ALS_FORCE, core.CMD_PSALS_FORCE, core.CMD_PS_PAUSE, core.CMD_ALS_PAUSE, ...
+        core.CMD_PSALS_PAUSE, core.CMD_PS_AUTO, core.CMD_ALS_AUTO, core.CMD_PSALS_AUTO:
             repeat until (clr_resp() == core.NO_ERROR)
             writereg(core.COMMAND, 1, @cmd)
             if (cmd == core.CMD_RESET)          ' no response when resetting
@@ -537,10 +573,12 @@ PRI command(cmd, param, args): resp | tmp
             readreg(core.RESPONSE, 1, @resp) ' XXX device NAK on bus if cmd was reset...must wait?
             return
 
+
 PRI hwkey() | tmp
 ' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
     tmp := core.HW_KEY_EXPECTED
     writereg(core.HW_KEY, 1, @tmp)
+
 
 PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
@@ -559,6 +597,7 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         other:
             return
 
+
 PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes from ptr_buff to the device
     case reg_nr
@@ -573,9 +612,10 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
         other:
             return
 
+
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

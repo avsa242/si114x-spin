@@ -1,14 +1,13 @@
 {
-    --------------------------------------------
-    Filename: SI114x-ALSDemo.spin2
-    Author: Jesse Burt
-    Description: Demo of the Si114x driver:
-        Ambient light sensing data (P2 version)
-    Copyright (c) 2022
-    Started Nov 27, 2022
-    Updated Nov 27, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       SI114x-ALSDemo.spin
+    Description:    Demo of the Si114x driver
+        * Ambient light sensing data
+    Author:         Jesse Burt
+    Started:        Jul 5, 2022
+    Updated:        Jun 4, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -25,11 +24,13 @@ CON
     I2C_FREQ    = 400_000                       ' max is 3_400_000
 ' --
 
+
 OBJ
 
-    cfg     : "boardcfg.p2eval"
-    ser     : "com.serial.terminal.ansi"
-    si      : "sensor.light.si114x"
+    cfg:    "boardcfg.p2eval"
+    ser:    "com.serial.terminal.ansi"
+    si:     "sensor.light.si114x"
+
 
 PUB main()
 
@@ -54,9 +55,10 @@ PUB setup()
         ser.strln(@"SI114x driver failed to start - halting")
         repeat
 
+
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

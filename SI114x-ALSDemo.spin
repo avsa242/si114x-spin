@@ -1,63 +1,65 @@
 {
-    --------------------------------------------
-    Filename: SI114x-ALSDemo.spin
-    Author: Jesse Burt
-    Description: Demo of the Si114x driver:
-        Ambient light sensing data
-    Copyright (c) 2022
-    Started Jul 5, 2022
-    Updated Nov 27, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       SI114x-ALSDemo.spin
+    Description:    Demo of the Si114x driver
+        * Ambient light sensing data
+    Author:         Jesse Burt
+    Started:        Jul 5, 2022
+    Updated:        Jun 4, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkmode    = cfg._clkmode
+    _xinfreq    = cfg._xinfreq
 
 ' -- User-modifiable constants
     SER_BAUD    = 115_200
-    LED         = cfg#LED1
+    LED         = cfg.LED1
 
     SCL_PIN     = 28
     SDA_PIN     = 29
     I2C_FREQ    = 1_000_000                     ' max is 3_400_000
 ' --
 
+
 OBJ
 
-    cfg     : "boardcfg.flip"
-    ser     : "com.serial.terminal.ansi"
-    time    : "time"
-    si      : "sensor.light.si114x"
+    cfg:    "boardcfg.flip"
+    ser:    "com.serial.terminal.ansi"
+    time:   "time"
+    si:     "sensor.light.si114x"
 
-PUB main{}
 
-    setup{}
+PUB main()
 
-    si.preset_als{}
+    setup()
+
+    si.preset_als()
     repeat
         ser.pos_xy(0, 3)
-        ser.printf1(string("IR data: %04.4x\n\r"), si.ir_data{})
-        ser.printf1(string("White data: %04.4x"), si.white_data{})
+        ser.printf1(@"IR data: %04.4x\n\r", si.ir_data())
+        ser.printf1(@"White data: %04.4x", si.white_data())
 
-PUB setup{}
+PUB setup()
 
     ser.start(SER_BAUD)
     time.msleep(30)
-    ser.clear{}
-    ser.strln(string("Serial terminal started"))
+    ser.clear()
+    ser.strln(@"Serial terminal started")
 
     if si.startx(SCL_PIN, SDA_PIN, I2C_FREQ)
-        ser.strln(string("SI114x driver started"))
+        ser.strln(@"SI114x driver started")
     else
-        ser.strln(string("SI114x driver failed to start - halting"))
+        ser.strln(@"SI114x driver failed to start - halting")
         repeat
+
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

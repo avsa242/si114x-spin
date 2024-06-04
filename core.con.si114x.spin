@@ -1,13 +1,12 @@
 {
-    --------------------------------------------
-    Filename: core.con.si114x.spin
-    Author: Jesse Burt
-    Description: SI114x-specific constants
-    Copyright (c) 2022
-    Started Jun 1, 2019
-    Updated Jul 5, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       core.con.si114x.spin
+    Description:    SI114x-specific constants
+    Author:         Jesse Burt
+    Started:        Jun 1, 2019
+    Updated:        Jun 4, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -247,12 +246,13 @@ CON
     ALS_IR_ADC_MISC_MASK        = $20
         IR_RANGE                = 5
 
-PUB null{}
+PUB null()
 ' This is not a top-level object
+
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
