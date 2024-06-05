@@ -12,8 +12,8 @@
 CON
 
     { default I/O configuration - these can be overridden by the parent object }
-    SCL             = 28
-    SDA             = 29
+    SCL             = 0
+    SDA             = 1
     I2C_FREQ        = 100_000
 
     { Chip status }
@@ -81,7 +81,7 @@ PUB null()
 
 PUB start(): status
 ' Start using default I/O settings
-    return startx(DEF_SCL, DEF_SDA, DEF_HZ)
+    return startx(SCL, SDA, I2C_FREQ)
 
 
 PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status

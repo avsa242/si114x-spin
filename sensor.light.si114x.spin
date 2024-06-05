@@ -87,7 +87,7 @@ PUB null()
 
 PUB start(): status
 ' Start using default I/O settings
-    return startx(DEF_SCL, DEF_SDA, DEF_HZ)
+    return startx(SCL, SDA, I2C_FREQ)
 
 
 PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
