@@ -11,54 +11,62 @@
 
 CON
 
-    SLAVE_WR                = core.SLAVE_ADDR
-    SLAVE_RD                = core.SLAVE_ADDR|1
+    { default I/O configuration - these can be overridden by the parent object }
+    SCL             = 28
+    SDA             = 29
+    I2C_FREQ        = 100_000
 
-    DEF_SCL                 = 28
-    DEF_SDA                 = 29
-    DEF_HZ                  = 100_000
-    I2C_MAX_FREQ            = core.I2C_MAX_FREQ
+    { Chip status }
+    SLEEP           = core.CHIP_STAT_SLEEP
+    SUSP            = core.CHIP_STAT_SUSPEND
+    RUN             = core.CHIP_STAT_RUNNING
 
-' Chip status
-    SLEEP                   = core.CHIP_STAT_SLEEP
-    SUSP                    = core.CHIP_STAT_SUSPEND
-    RUN                     = core.CHIP_STAT_RUNNING
+    { Operation modes }
+    ONE_PS          = core.CMD_PS_FORCE
+    ONE_ALS         = core.CMD_ALS_FORCE
+    ONE_PSALS       = core.CMD_PSALS_FORCE
+    CONT_PS         = core.CMD_PS_AUTO
+    CONT_ALS        = core.CMD_ALS_AUTO
+    CONT_PSALS      = core.CMD_PSALS_AUTO
+    PAUSE_PS        = core.CMD_PS_PAUSE
+    PAUSE_ALS       = core.CMD_ALS_PAUSE
+    PAUSE_PSALS     = core.CMD_PSALS_PAUSE
 
-' Operation modes
-    ONE_PS                  = core.CMD_PS_FORCE
-    ONE_ALS                 = core.CMD_ALS_FORCE
-    ONE_PSALS               = core.CMD_PSALS_FORCE
-    CONT_PS                 = core.CMD_PS_AUTO
-    CONT_ALS                = core.CMD_ALS_AUTO
-    CONT_PSALS              = core.CMD_PSALS_AUTO
-    PAUSE_PS                = core.CMD_PS_PAUSE
-    PAUSE_ALS               = core.CMD_ALS_PAUSE
-    PAUSE_PSALS             = core.CMD_PSALS_PAUSE
+    { Visible/IR sensor measurement range }
+    NORMAL          = $00
+    HIGH            = $20
 
-' Visible/IR sensor measurement range
-    NORMAL                  = $00
-    HIGH                    = $20
+    { Read/write for uv_coeffs() }
+    R               = 0
+    W               = 1
 
-' Read/write for uv_coeffs()
-    R                       = 0
-    W                       = 1
+    { Default dark sensor values }
+    IR_DARK_DEF     = 250
+    VIS_DARK_DEF    = 260
 
-' Default dark sensor values
-    IR_DARK_DEF             = 250
-    VIS_DARK_DEF            = 260
+    { Lux calculation coefficients }
+    VIS_COEFF       = 5_4100
+    IR_COEFF        = 0_0800
+    VIS_CPL         = 0_3190
+    IR_CPL          = 8_4600
+    CORR_FACT       = 0_0800
 
-' Lux calculation coefficients
-    VIS_COEFF               = 5_4100
-    IR_COEFF                = 0_0800
-    VIS_CPL                 = 0_3190
-    IR_CPL                  = 8_4600
-    CORR_FACT               = 0_0800
+
+    SLAVE_WR        = core.SLAVE_ADDR
+    SLAVE_RD        = core.SLAVE_ADDR|1
+
+    DEF_SCL         = 28
+    DEF_SDA         = 29
+    DEF_HZ          = 100_000
+    I2C_MAX_FREQ    = core.I2C_MAX_FREQ
+
 
 VAR
 
     word _cal_data[6]
     word _ir_dark, _vis_dark
     byte _opmode
+
 
 OBJ
 
@@ -78,7 +86,7 @@ PUB null()
 
 
 PUB start(): status
-' Start using "standard" Propeller I2C pins, 100kHz
+' Start using default I/O settings
     return startx(DEF_SCL, DEF_SDA, DEF_HZ)
 
 
@@ -89,7 +97,7 @@ PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
             time.usleep(core.T_POR)
             if ( lookdown(dev_id(): core.PART_ID_RESP_1145, ...
                                     core.PART_ID_RESP_1146, ...
-                                    core.PART_ID_RESP_1147 )
+                                    core.PART_ID_RESP_1147) )
                 reset()
                 return
     ' if this point is reached, something above failed
