@@ -4,7 +4,7 @@
     Description:    Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
     Author:         Jesse Burt
     Started:        Oct 24, 2021
-    Updated:        Jun 4, 2024
+    Updated:        Nov 16, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -54,10 +54,6 @@ CON
 
     SLAVE_WR        = core.SLAVE_ADDR
     SLAVE_RD        = core.SLAVE_ADDR|1
-
-    DEF_SCL         = 0
-    DEF_SDA         = 1
-    DEF_HZ          = 100_000
     I2C_MAX_FREQ    = core.I2C_MAX_FREQ
 
 
@@ -72,7 +68,6 @@ OBJ
 
     i2c:    "com.i2c"                           ' I2C engine
     core:   "core.con.si114x"                   ' HW-specific constants
-    u64:    "math.unsigned64"                     ' unsigned 64-bit math
 
 
 PUB null()
@@ -138,9 +133,9 @@ PUB preset_uvi()
     opmode(CONT_ALS)
     als_data_rate(32_000_000)
     ' These are the factory default part-to-part variance coefficients.
-    ' They are restored by calling Reset(), but show them here so the user
+    ' They are restored by calling reset(), but show them here so the user
     '   doesn't have to look far for them.
-    uv_set_coeffs($00_01_6B_7B)
+    'uv_set_coeffs($00_01_6B_7B)
 
     aux_chan_ena(TRUE)
     uv_chan_ena(TRUE)
@@ -156,25 +151,25 @@ PUB preset_uvi()
     int_mask(core.INTSRC_ALS)
 
 
-PUB als_data_rate(rate=-2): curr_rate
+PUB als_data_rate(rate=-2): c
 ' Set measurement data rate, in milli-Hz
 '   Valid values: 489..32_000_000 (= 0.489Hz .. 32kHz)
 '   Any other value polls the chip and returns the current setting
     case rate
         489..32_000_000:
             rate := (32_000_000 / rate)
-            writereg(core.MEAS_RATE0, 2, @rate)
+            writereg(core.MEAS_RATE0, rate, 2)
         other:
-            curr_rate := 0
-            readreg(core.MEAS_RATE0, 2, @curr_rate)
-            return (32_000_000 / curr_rate)
+            c := 0
+            c := readreg(core.MEAS_RATE0, 2)
+            return (32_000_000 / c)
 
 
 PUB als_data_rdy(): flag
 ' Flag indicating ALS data is ready
 '   Returns: TRUE (-1) or FALSE (0)
-    flag := ((interrupt() & core.ALS_INT_BITS) <> 0)
-    if (flag)
+    flag := ( (interrupt() & core.ALS_INT_BITS) <> 0 )
+    if ( flag )
         int_clear(core.INTSRC_ALS)
 
 
@@ -182,15 +177,13 @@ PUB aux_chan_ena(state=-2): curr_state
 ' Enable the auxiliary source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := command(core.CMD_PARAM_QUERY, core.CHLIST, 0)
+    curr_state := param_query(core.CHLIST)
     case abs(state)
         0, 1:
-            state := abs(state) << core.EN_AUX
+            state := (curr_state & core.EN_AUX_MASK) | ( abs(state) << core.EN_AUX )
+            param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_AUX) & 1) == 1)
-
-    state := ((curr_state & core.EN_AUX_MASK) | state)
-    command(core.CMD_PARAM_SET, core.CHLIST, state)
 
 
 PUB cal_data(idx): cal_word
@@ -210,11 +203,10 @@ PUB dev_id(): id
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
-    id := 0
-    readreg(core.PART_ID, 1, @id)
+    return readreg(core.PART_ID)
 
 
-PUB int_clear(mask)
+PUB int_clear(cm)
 ' Clear interrupts
 '   Bits: 5..0 (set a bit to clear the interrupt)
 '       5: command interrupt
@@ -222,11 +214,10 @@ PUB int_clear(mask)
 '       3: proximity sensor ch2 interrupt
 '       2: proximity sensor ch1 interrupt
 '       0: ALS or UV measurement is ready
-    mask &= core.IRQ_STATUS_MASK
-    writereg(core.IRQ_STATUS, 1, @mask)
+    writereg(core.IRQ_STATUS, cm & core.IRQ_STATUS_MASK)
 
 
-PUB interrupt(): src
+PUB interrupt(): s
 ' Interrupt source(s)
 '   Returns: interrupt mask
 '   Bits: 5..0 (set a bit to clear the interrupt)
@@ -235,11 +226,10 @@ PUB interrupt(): src
 '       3: proximity sensor ch2 interrupt
 '       2: proximity sensor ch1 interrupt
 '       0: ALS or UV measurement is ready
-    src := 0
-    readreg(core.IRQ_STATUS, 1, @src)
+    return readreg(core.IRQ_STATUS)
 
 
-PUB int_mask(mask=-2): curr_mask
+PUB int_mask(m=-2): cm
 ' Set interrupt mask
 '   Bits: 4..0 (set a bit to assert INT pin when interrupt occurs)
 '       4: proximity sensor ch3 interrupt
@@ -247,72 +237,62 @@ PUB int_mask(mask=-2): curr_mask
 '       2: proximity sensor ch1 interrupt
 '       0: ALS or UV measurement is ready
 '   Any other value polls the chip and returns the current setting
-    case mask
+    case m
         %00000000..%11111111:
-            mask &= core.IRQ_ENABLE_MASK
-            writereg(core.IRQ_ENABLE, 1, @mask)
+            writereg(core.IRQ_ENABLE, m & core.IRQ_ENABLE_MASK)
         other:
-            curr_mask := 0
-            readreg(core.IRQ_ENABLE, 1, @curr_mask)
+            return readreg(core.IRQ_ENABLE)
 
 
 PUB ir_chan_ena(state=-2): curr_state
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := command(core.CMD_PARAM_QUERY, core.CHLIST, 0)
+    curr_state := param_query(core.CHLIST)
     case abs(state)
         0, 1:
-            state := abs(state) << core.EN_ALS_IR
+            state := (curr_state & core.EN_ALS_IR_MASK) | ( abs(state) << core.EN_ALS_IR )
+            param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_ALS_IR) & 1) == 1)
-
-    state := ((curr_state & core.EN_ALS_IR_MASK) | state)
-    command (core.CMD_PARAM_SET, core.CHLIST, state)
 
 
 PUB ir_bias(val=-2): curr_val
 ' Set IR sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
-    if (lookdown(val: 0..65535))
+    if ( lookdown(val: 0..65535) )
         _ir_dark := val
     else
         return _ir_dark
 
 
-PUB ir_data(): ir_adc
+PUB ir_data(): a
 ' Return data from infra-red light channel
-    readreg (core.ALS_IR_DATA0, 2, @ir_adc)
+    return readreg(core.ALS_IR_DATA0, 2)
 
 
 PUB ir_gain(gain=-2): curr_gain
 ' Gain factor of infra-red light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
-    curr_gain := 0
-    curr_gain := command(core.CMD_PARAM_QUERY, core.ALS_IR_ADC_GAIN, 0)
+    curr_gain := param_query(core.ALS_IR_ADC_GAIN)
     case gain
-        1: gain := %000
-        16: gain := %100
-        64: gain := %110
-        128: gain := %111
+        1, 16, 64, 128:
+            gain := encod(gain)
+            param_set(core.ALS_IR_ADCGAIN, gain)
+            gain <<= core.IR_ADC_REC
+            ' Set the one's complement of the gain val
+            ' to ADC recovery period, per datasheet
+            param_set(core.ALS_IR_ADC_COUNTER, !gain)
         other:
-            return lookupz(curr_gain & core.ALS_IR_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
-
-    command(core.CMD_PARAM_SET, core.ALS_IR_ADCGAIN, gain)
-    gain <<= core.IR_ADC_REC
-    ' Set the one's complement of the gain val
-    ' to ADC recovery period, per datasheet
-    command(core.CMD_PARAM_SET, core.ALS_IR_ADC_COUNTER, !gain)
+            return decod(curr_gain & core.ALS_IR_ADCGAIN_BITS)
 
 
-PUB ir_overflow(): flag
+PUB ir_overflow(): f
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
-    flag := 0
-    readreg (core.RESPONSE, 1, @flag)
-    return (flag == core.ALS_IR_ADC_OVERFLOW)
+    return ( readreg(core.RESPONSE) == core.ALS_IR_ADC_OVERFLOW )
 
 
 PUB ir_range(range=-2): curr_rng
@@ -320,14 +300,13 @@ PUB ir_range(range=-2): curr_rng
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)
-    curr_rng := command(core.CMD_PARAM_QUERY, core.ALS_IR_ADC_MISC, 0)
+    curr_rng := param_query(core.ALS_IR_ADC_MISC)
     case range
         NORMAL, HIGH:
+            range &= core.ALS_IR_ADC_MISC_MASK
+            param_set(core.ALS_IR_ADC_MISC, range)
         other:
             return curr_rng
-
-    range &= core.ALS_IR_ADC_MISC_MASK
-    command(core.CMD_PARAM_SET, core.ALS_IR_ADC_MISC, range)
 
 
 PUB lux(): lx | vis, ir, lux1, lux2
@@ -341,8 +320,8 @@ PUB lux(): lx | vis, ir, lux1, lux2
     vis /= 50
     ir /= 50
 
-    lux1 := u64.multdiv( (vis - _vis_dark), VIS_COEFF, 1000)
-    lux2 := u64.multdiv( (ir - _ir_dark), IR_COEFF, 1000)
+    lux1 := muldiv64( (vis - _vis_dark), VIS_COEFF, 1000)
+    lux2 := muldiv64( (ir - _ir_dark), IR_COEFF, 1000)
     return (0 #> (lux1 - lux2))                 ' clamp to min of 0
 
 
@@ -357,35 +336,40 @@ PUB opmode(mode=-2): curr_mode
     case mode
         ONE_PS, ONE_ALS, ONE_PSALS, CONT_PS, CONT_ALS, CONT_PSALS, PAUSE_PS, PAUSE_ALS, PAUSE_PSALS:
             _opmode := mode
+            command(mode)
         other:
             return _opmode                      ' not readable from sensor;
                                                 ' keep a local copy
 
-    command(mode, 0, 0)
 
-
-PUB power_state(): curr_state
+PUB power_state(): s
 ' Chip status
 '   Returns:
 '       RUN (%100): Device is awake
 '       SUSP (%010): Device is in a low-power state, waiting for a measurement to complete
 '       SLEEP (%001): Device is in its lowest power state
-    curr_state := 0
-    readreg(core.CHIP_STAT, 1, @curr_state)
+    return readreg(core.CHIP_STAT)
 
 
 PUB rd_cal_data()
 ' Read calibration data into 6-word array
     wordfill(@_cal_data, 0, 6)
-    command(core.CMD_GET_CAL, 0, 0)
-    readreg(core.CAL_DATA, 12, @_cal_data)
+    command(core.CMD_GET_CAL)
+    i2c.start()
+    i2c.write(SLAVE_WR)
+    i2c.write(core.CAL_DATA)
+
+    i2c.start()
+    i2c.write(SLAVE_RD)
+    i2c.rdblock_lsbf(@_cal_data, 12, i2c.NAK)
+    i2c.stop()
 
 
 PUB reset()
 ' Perform soft-reset
-    command(core.CMD_RESET, 0, 0)
+    command(core.CMD_RESET)
     waitms(10)
-    hwkey()
+    writereg(core.HW_KEY, core.HW_KEY_EXPECTED)
     waitms(10)
     opmode(ONE_PSALS)
     ir_bias(IR_DARK_DEF)
@@ -395,87 +379,76 @@ PUB reset()
 PUB rev_id(): id
 ' Revision
 '   Returns: $00
-    id := 0
-    readreg(core.REV_ID, 1, @id)
+    return readreg(core.REV_ID)
 
 
-PUB running(): flag
+PUB running(): f
 ' Flag indicating device is running/awake
 '   Returns: TRUE (-1) if device is awake, FALSE (0) otherwise
-    flag := 0
-    readreg(core.CHIP_STAT, 1, @flag)
-    return (flag == core.CHIP_STAT_RUNNING)
+    return ( readreg(core.CHIP_STAT) == core.CHIP_STAT_RUNNING )
 
 
-PUB seq_id(): seq_rev
+PUB seq_id(): r
 ' Sequencer revision
 '   Returns known values:
 '       $08: Si114x-A10 (MAJOR_SEQ=1, MINOR_SEQ=0)
-    seq_rev := 0
-    readreg(core.SEQ_ID, 1, @seq_rev)
+    return readreg(core.SEQ_ID)
 
 
 PUB sleeping(): flag
 ' Flag indicating device is sleeping
 '   Returns:    TRUE (-1) if device is in its lowest power state
 '               FALSE (0) otherwise
-    flag := 0
-    readreg(core.CHIP_STAT, 1, @flag)
-    return (flag == core.CHIP_STAT_SLEEP)
+    return ( readreg(core.CHIP_STAT) == core.CHIP_STAT_SLEEP )
 
 
 PUB suspended(): flag
 ' Suspended status
 '   Returns:    TRUE (-1) if device is in a low-power state,
 '               FALSE (0) otherwise
-    flag := 0
-    readreg(core.CHIP_STAT, 1, @flag)
-    return (flag == core.CHIP_STAT_SUSPEND)
+    return ( readreg(core.CHIP_STAT) == core.CHIP_STAT_SUSPEND )
 
 
 PUB uv_chan_ena(state=-2): curr_state
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := command(core.CMD_PARAM_QUERY, core.CHLIST, 0)
+    curr_state := param_query(core.CHLIST)
     case abs(state)
         0, 1:
             state := abs(state) << core.EN_UV
+            state := ((curr_state & core.EN_UV_MASK) | state)
+            param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_UV) & 1) == 1)
 
-    state := ((curr_state & core.EN_UV_MASK) | state)
-    command(core.CMD_PARAM_SET, core.CHLIST, state)
 
-
-PUB uv_coeffs(): curr_coeffs
+PUB uv_coeffs(): c
 ' Get coefficients used to calculate UV index readings
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    curr_coeffs := 0
-    readreg(core.UCOEF0, 4, @curr_coeffs)
+    return readreg(core.UCOEF0, 4)
 
 
-PUB uv_set_coeffs(coeffs)
+PUB uv_set_coeffs(c)
 ' Set coefficients used to calculate UV index readings
 '   Valid values:
 '       rw: READ (0), WRITE (1)
 '   NOTE: Four 8-bit coefficients are used, packed into long 'coeffs'
 '       UCOEF3_UCOEF2_UCOEF1_UCOEF0
-    writereg(core.UCOEF0, 4, @coeffs)
+    writereg(core.UCOEF0, c, 4)
 
 
-PUB uv_data(): uv_adc
+PUB uv_data(): a
 ' Return data from UV index channel
-    uv_adc := 0
-    readreg(core.AUX_DATA0, 2, @uv_adc)
+    return readreg(core.AUX_DATA0, 2)
 
 
 PUB white_bias(val=-2): curr_val
 ' Set white/visible sensor bias/dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
-    if (lookdown(val: 0..65535))
+    if ( lookdown(val: 0..65535) )
         _vis_dark := val
     else
         return _vis_dark
@@ -485,50 +458,42 @@ PUB white_chan_ena(state=-2): curr_state
 ' Enable the white/visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := command(core.CMD_PARAM_QUERY, core.CHLIST, 0)
+    curr_state := param_query(core.CHLIST)
     case abs(state)
         0, 1:
             state := abs(state) << core.EN_ALS_VIS
+            state := ((curr_state & core.EN_ALS_VIS_MASK) | state)
+            param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_ALS_VIS) & 1) == 1)
 
-    state := ((curr_state & core.EN_ALS_VIS_MASK) | state)
-    command(core.CMD_PARAM_SET, core.CHLIST, state)
 
-
-PUB white_data(): vis_adc
+PUB white_data(): a
 ' Return data from white/visible light channel
-    vis_adc := 0
-    readreg(core.ALS_VIS_DATA0, 2, @vis_adc)
+    return readreg(core.ALS_VIS_DATA0, 2)
 
 
 PUB white_gain(gain=-2): curr_gain
 ' Gain factor of white/visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
-    curr_gain := 0
-    curr_gain := command(core.CMD_PARAM_QUERY, core.ALS_VIS_ADC_GAIN, 0)
+    curr_gain := param_query(core.ALS_VIS_ADC_GAIN)
     case gain
-        1: gain := %000
-        16: gain := %100
-        64: gain := %110
-        128: gain := %111
+        1, 16, 64, 128:
+            gain := encod(gain)
+            param_set(core.ALS_VIS_ADCGAIN, gain)
+            gain <<= core.VIS_ADC_REC
+            ' Set the one's complement of the gain val
+            ' to ADC recovery period, per datasheet
+            param_set(core.ALS_VIS_ADC_COUNTER, !gain)
         other:
-            return lookupz(curr_gain & core.ALS_VIS_ADCGAIN_BITS: 1, 0, 0, 0, 16, 0, 64, 128)
-
-    command(core.CMD_PARAM_SET, core.ALS_VIS_ADCGAIN, gain)
-    gain <<= core.VIS_ADC_REC
-    ' Set the one's complement of the gain val
-    ' to ADC recovery period, per datasheet
-    command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_COUNTER, !gain)
+            return decod(curr_gain & core.ALS_VIS_ADCGAIN_BITS)
 
 
 PUB white_overflow(): flag
 ' Flag indicating white/visible light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
-    flag := 0
-    readreg(core.RESPONSE, 1, @flag)
-    return (flag == core.ALS_VIS_ADC_OVERFLOW)
+    return ( readreg(core.RESPONSE) == core.ALS_VIS_ADC_OVERFLOW )
 
 
 PUB white_range(range=-2): curr_rng
@@ -536,84 +501,89 @@ PUB white_range(range=-2): curr_rng
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)
-    curr_rng := 0
-    curr_rng := command(core.CMD_PARAM_QUERY, core.ALS_VIS_ADC_MISC, 0)
     case range
         NORMAL, HIGH:
+            param_set(core.ALS_VIS_ADC_MISC, range)
         other:
-            return curr_rng
-
-    command(core.CMD_PARAM_SET, core.ALS_VIS_ADC_MISC, range)
+            return param_query(core.ALS_VIS_ADC_MISC)
 
 
-PRI clr_resp(): resp | tmp
+PRI clr_resp(): r
 ' Clear response register
 '   Returns: response, after clearing
-    resp := 0
-    tmp := core.CMD_NOP
-    writereg(core.COMMAND, 1, @tmp)
-    readreg(core.RESPONSE, 1, @resp)
+    writereg(core.COMMAND, core.CMD_NOP)
+    return readreg(core.RESPONSE)
 
 
-PRI command(cmd, param, args): resp | tmp
+PRI command(cmd): r
 ' Send command with parameters to device
-    resp := 0
+    r := 0
     case cmd
-        core.CMD_PARAM_QUERY:
-            cmd |= param
-            repeat until (clr_resp() == core.NO_ERROR)
-            writereg(core.COMMAND, 1, @cmd)
-            repeat
-                readreg(core.RESPONSE, 1, @resp)
-            while (resp == 0)
-            readreg(core.PARAM_RD, 1, @resp)
-            return
-        core.CMD_PARAM_SET:
-            cmd |= param
-            writereg(core.PARAM_WR, 1, @args)
-            repeat until (clr_resp() == core.NO_ERROR)
-            writereg(core.COMMAND, 1, @cmd)
-            repeat
-                readreg(core.RESPONSE, 1, @resp)
-            while (resp == 0)
-            return
         core.CMD_NOP, core.CMD_RESET, core.CMD_BUSADDR, core.CMD_PS_FORCE, core.CMD_GET_CAL, ...
         core.CMD_ALS_FORCE, core.CMD_PSALS_FORCE, core.CMD_PS_PAUSE, core.CMD_ALS_PAUSE, ...
         core.CMD_PSALS_PAUSE, core.CMD_PS_AUTO, core.CMD_ALS_AUTO, core.CMD_PSALS_AUTO:
-            repeat until (clr_resp() == core.NO_ERROR)
-            writereg(core.COMMAND, 1, @cmd)
-            if (cmd == core.CMD_RESET)          ' no response when resetting
+            repeat
+            until ( clr_resp() == core.NO_ERROR )
+            writereg(core.COMMAND, cmd)
+            if ( cmd == core.CMD_RESET )        ' no response when resetting
                 waitms(1)                       ' also must wait min. 1ms
                 return
-            readreg(core.RESPONSE, 1, @resp) ' XXX device NAK on bus if cmd was reset...must wait?
-            return
+            return readreg(core.RESPONSE)       ' XXX device NAK on bus if cmd was reset...must wait?
 
 
-PRI hwkey() | tmp
-' Writes $17 to HW_KEY reg (per the Si114x datasheet, this must be written for proper operation)
-    tmp := core.HW_KEY_EXPECTED
-    writereg(core.HW_KEY, 1, @tmp)
+PRI param_query(p): v
+' Query a parameter for the current value
+'   p:          parameter
+'   Returns:    current value
+    repeat
+    until ( clr_resp() == core.NO_ERROR )
+
+    writereg(core.COMMAND, core.CMD_PARAM_QUERY)
+
+    repeat
+        v := readreg(core.RESPONSE)
+    while (v == 0)
+
+    return readreg(core.PARAM_RD)
 
 
-PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI param_set(p, v): r
+' Set a parameter value
+'   p:          parameter
+'   v:          value
+'   Returns:    status response
+    writereg(core.PARAM_WR, v)
+
+    repeat
+    until ( clr_resp() == core.NO_ERROR )
+
+    writereg(core.COMMAND, core.CMD_PARAM_SET | p)
+
+    repeat
+        r := readreg(core.RESPONSE)
+    while (r == 0)
+
+    return
+
+PRI readreg(reg_nr, len=1): v | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register
         $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
             cmd_pkt.byte[0] := SLAVE_WR
             cmd_pkt.byte[1] := reg_nr
-
+            v := 0
             i2c.start()
             i2c.wrblock_lsbf(@cmd_pkt, 2)
 
             i2c.start()
             i2c.write(SLAVE_RD)
-            i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c.NAK)
+            i2c.rdblock_lsbf(@v, len, i2c.NAK)
             i2c.stop()
         other:
             return
 
 
-PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI writereg(reg_nr, val, len=1) | cmd_pkt
 ' Write nr_bytes from ptr_buff to the device
     case reg_nr
         $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
@@ -622,7 +592,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 
             i2c.start()
             i2c.wrblock_lsbf(@cmd_pkt, 2)
-            i2c.wrblock_lsbf(ptr_buff, nr_bytes)
+            i2c.wrblock_lsbf(@val, len)
             i2c.stop()
         other:
             return
