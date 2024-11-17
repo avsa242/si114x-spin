@@ -5,35 +5,34 @@
         * Ambient light sensing data
     Author:         Jesse Burt
     Started:        Jul 5, 2022
-    Updated:        Jun 5, 2024
+    Updated:        Nov 17, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    time:   "time"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
-    si:     "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=1_000_000
+    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000
+    time:   "time"
 
 
 PUB main()
 
     setup()
 
-    si.preset_als()
+    sensor.preset_als()                         ' set up the sensor for ambient light sensing
 
     repeat
         ser.pos_xy(0, 3)
-        ser.printf1(@"IR data: %04.4x\n\r", si.ir_data())
-        ser.printf1(@"White data: %04.4x", si.white_data())
+        ser.printf(@"IR data: %04.4x\n\r", sensor.ir_data())
+        ser.printf(@"White data: %04.4x", sensor.white_data())
 
 
 PUB setup()
@@ -43,7 +42,7 @@ PUB setup()
     ser.clear()
     ser.strln(@"Serial terminal started")
 
-    if ( si.start() )
+    if ( sensor.start() )
         ser.strln(@"SI114x driver started")
     else
         ser.strln(@"SI114x driver failed to start - halting")

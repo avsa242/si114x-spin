@@ -5,35 +5,34 @@
         * Display illuminance in lux
     Author:         Jesse Burt
     Started:        Jul 4, 2022
-    Updated:        Jun 5, 2024
+    Updated:        Nov 17, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    time:   "time"
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
-    si:     "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=1_000_000
+    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000
+    time:   "time"
 
 
 PUB main() | luxsc
 
     setup()
 
-    si.preset_als()
+    sensor.preset_als()                         ' set up the sensor for ambient light sensing
 
     repeat
         ser.pos_xy(0, 3)
-        luxsc := si.lux()
-        ser.printf2(@"lux: %6.6d.%01.1d", (luxsc / 10), ||(luxsc // 10))
+        luxsc := sensor.lux()                   ' read illuminance in 10's of lux
+        ser.printf(@"lux: %6.6d.%01.1d", (luxsc / 10), ||(luxsc // 10))
 
 
 PUB setup()
@@ -43,7 +42,7 @@ PUB setup()
     ser.clear()
     ser.strln(@"Serial terminal started")
 
-    if ( si.start() )
+    if ( sensor.start() )
         ser.strln(@"SI114x driver started")
     else
         ser.strln(@"SI114x driver failed to start - halting")
