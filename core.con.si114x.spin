@@ -4,7 +4,7 @@
     Description:    SI114x-specific constants
     Author:         Jesse Burt
     Started:        Jun 1, 2019
-    Updated:        Jun 4, 2024
+    Updated:        Nov 17, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -47,14 +47,19 @@ CON
     MEAS_RATE1                  = $09
 
     PS_LED21                    = $0F
+    PS_LED21_MASK               = $ff
         LED2_I                  = 4
         LED1_I                  = 0
-        LED2_LI_BITS            = %1111
-        LED1_LI_BITS            = %1111
+        LED2_I_BITS             = %1111
+        LED1_I_BITS             = %1111
+        LED2_I_MASK             = (LED2_I_BITS << LED2_I) ^ PS_LED21_MASK
+        LED1_I_MASK             = LED1_I_BITS ^ PS_LED21_MASK
 
     PS_LED3                     = $10
+    PS_LED3_MASK                = $0f
         LED3_I                  = 0
         LED3_I_BITS             = %1111
+        LED3_I_MASK             = LED3_I_BITS ^ PS_LED3_MASK
 
     UCOEF0                      = $13
         UCOEF0_DEF              = $7B
@@ -150,6 +155,8 @@ CON
         EN_PS3                  = 2
         EN_PS2                  = 1
         EN_PS1                  = 0
+        EN_PS                   = 0
+        EN_PS_BITS              = %111
         EN_UV_MASK              = (1 << EN_UV) ^ CHLIST_MASK
         EN_AUX_MASK             = (1 << EN_AUX) ^ CHLIST_MASK
         EN_ALS_IR_MASK          = (1 << EN_ALS_IR) ^ CHLIST_MASK
@@ -157,7 +164,7 @@ CON
         EN_PS3_MASK             = (1 << EN_PS3) ^ CHLIST_MASK
         EN_PS2_MASK             = (1 << EN_PS2) ^ CHLIST_MASK
         EN_PS1_MASK             = (1 << EN_PS1) ^ CHLIST_MASK
-
+        EN_PS_MASK              = EN_PS_BITS ^ CHLIST_MASK
 
     PSLED12_SELECT              = $02
     PSLED12_SELECT_MASK         = $77

@@ -16,6 +16,7 @@ This is a P8X32A/Propeller driver object for the Silicon Labs Si114x (5, 6, 7) s
 * Set IR and Visible light sensor gains
 * Set custom UV index calibration coefficients
 * Measure illuminance, in lux
+* Proximity sensing
 
 
 ## Requirements
@@ -40,11 +41,16 @@ P2/SPIN2:
 (other versions or toolchains not listed are __not supported__, and _may or may not_ work)
 
 
+## Hardware compatibility
+
+* Tested with Adafruit Si1145 (P/N 1777; EOL)
+
+
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
-* Doesn't support proximity sensor function
 * Doesn't support alternate slave address usage/programming
 * Doesn't support temp sensor/Vdd/Vss reading (not currently planned)
 * Measurement calibration/correction/calculation unverified
+* Silicon Labs has obsoleted the Si11xx series
 

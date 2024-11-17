@@ -32,7 +32,7 @@ CON
     PAUSE_ALS       = core.CMD_ALS_PAUSE
     PAUSE_PSALS     = core.CMD_PSALS_PAUSE
 
-    { Visible/IR sensor measurement range }
+    { Visible/IR/Proximity sensor measurement range }
     NORMAL          = $00
     HIGH            = $20
 
@@ -61,6 +61,7 @@ VAR
 
     word _cal_data[6]
     word _ir_dark, _vis_dark
+    word _model
     byte _opmode
 
 
@@ -129,9 +130,23 @@ PUB preset_als()
 PUB preset_prox()
 ' Preset settings for proximity sensor mode
     reset()
-    opmode(CONT_PS)
-
-    ' XXX fill in
+    uv_chan_ena(false)
+    ir_chan_ena(true)
+    white_chan_ena(false)
+    prox_chan_ena(CH_PS1)
+    ir_led1_current(22)
+    set_prox_adc_input(1, ADC_LARGE_IR)
+    prox_adc_gain(1)
+    prox_adc_measure_delay(511)
+    prox_adc_range(NORMAL)
+    prox_adc_mode(PS_ADC_PROX)
+    als_ir_adc_input(ADC_SMALL_IR)
+    ir_gain(1)
+    ir_range(HIGH)
+    white_gain(1)
+    white_range(HIGH)
+    als_data_rate(125_490)
+    opmode(CONT_PSALS)
 
 
 PUB preset_uvi()
@@ -158,7 +173,7 @@ PUB preset_uvi()
     int_mask(core.INTSRC_ALS)
 
 
-PUB als_data_rate(rate): c
+PUB als_data_rate(rate=-2): c
 ' Set measurement data rate, in milli-Hz
 '   Valid values: 489..32_000_000 (= 0.489Hz .. 32kHz)
 '   Any other value polls the chip and returns the current setting
@@ -180,7 +195,20 @@ PUB als_data_rdy(): flag
         int_clear(core.INTSRC_ALS)
 
 
-PUB aux_chan_ena(state): curr_state
+pub als_ir_adc_input(i=-2): c
+' Set ADC input used for IR measurements
+'   i:
+'       ADC_SMALL_IR ($00): small IR photodiode
+'       ADC_LARGE_IR ($03): large IR photodiode
+'   Returns:    current setting if i is out of range
+    case i
+        ADC_SMALL_IR, ADC_LARGE_IR:
+            param_set(core.ALS_IR_ADCMUX, i)
+        other:
+            return param_query(core.ALS_IR_ADCMUX)
+
+
+PUB aux_chan_ena(state=-2): curr_state
 ' Enable the auxiliary source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -210,7 +238,7 @@ PUB dev_id(): id
 '       $45: Si1145
 '       $46: Si1146
 '       $47: Si1147
-    return readreg(core.PART_ID)
+    _model := id := readreg(core.PART_ID)
 
 
 PUB int_clear(cm)
@@ -236,7 +264,7 @@ PUB interrupt(): s
     return readreg(core.IRQ_STATUS)
 
 
-PUB int_mask(m): cm
+PUB int_mask(m=-2): cm
 ' Set interrupt mask
 '   Bits: 4..0 (set a bit to assert INT pin when interrupt occurs)
 '       4: proximity sensor ch3 interrupt
@@ -251,7 +279,7 @@ PUB int_mask(m): cm
             return readreg(core.IRQ_ENABLE)
 
 
-PUB ir_chan_ena(state): curr_state
+PUB ir_chan_ena(state=-2): curr_state
 ' Enable the IR ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -264,7 +292,7 @@ PUB ir_chan_ena(state): curr_state
             return (((curr_state >> core.EN_ALS_IR) & 1) == 1)
 
 
-PUB ir_bias(val): curr_val
+PUB ir_bias(val=-2): curr_val
 ' Set IR sensor dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
@@ -279,7 +307,7 @@ PUB ir_data(): a
     return readreg(core.ALS_IR_DATA0, 2)
 
 
-PUB ir_gain(gain): curr_gain
+PUB ir_gain(gain=-2): curr_gain
 ' Gain factor of infra-red light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
@@ -296,13 +324,75 @@ PUB ir_gain(gain): curr_gain
             return |<(curr_gain & core.ALS_IR_ADCGAIN_BITS)
 
 
+PUB ir_led1_current(i=-2): c
+' Set IR LED1 current
+'   i:          LED current limit in milliamperes
+'   Returns:    current setting if i is out of range
+    c := readreg(core.PS_LED21)
+    case i
+        0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359:
+            i := lookdownz(i: 0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359)
+            i := (c & core.LED1_I_MASK) | i
+            writereg(core.PS_LED21, i)
+        other:
+            c := c & core.LED1_I_BITS
+            return lookupz(c: 0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359)
+
+PUB ir_led2_current(i=-2): c
+' Set IR LED2 current (Si1146 and Si1147 only)
+'   i:          LED current limit in milliamperes
+'   Returns:    current setting if i is out of range
+    c := readreg(core.PS_LED21)
+    case i
+        0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359:
+            c := (c & core.LED2_I_MASK)
+            if ( (_model == $46) or (_model == $47) )
+                ' this LED output is only supported on the Si1146 and 1147
+                c |= lookdownz(i:   0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, ...
+                                    314, 359) << core.LED2_I
+            elseif (_model == $45)
+                ' must be set to 0 on the Si1145
+                'i |= 0
+            else
+                ' invalid model; driver not started yet or bad communication: do nothing
+                return
+            writereg(core.PS_LED21, c)
+        other:
+            c := (c >> core.LED2_I) & core.LED2_I_BITS
+            return lookupz(c: 0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359)
+
+
+PUB ir_led3_current(i=-2): c
+' Set IR LED3 current (Si1147 only)
+'   i:          LED current limit in milliamperes
+'   Returns:    current setting if i is out of range
+    c := readreg(core.PS_LED3)
+    case i
+        0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359:
+            c := (c & core.LED3_I_MASK)
+            if ( _model == $47 )
+                ' this LED output is only supported on the Si1147
+                c |= lookdownz(i:   0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, ...
+                                    314, 359)
+            elseif ( (_model == $45) or (_model == $46) )
+                ' must be set to 0 on the Si1145 and 1146
+                'i |= 0
+            else
+                ' invalid model; driver not started yet or bad communication: do nothing
+                return
+            writereg(core.PS_LED3, c)
+        other:
+            c := c & core.LED3_I_BITS
+            return lookupz(c: 0, 6, 11, 22, 45, 67, 90, 112, 135, 157, 180, 202, 224, 269, 314, 359)
+
+
 PUB ir_overflow(): f
 ' Flag indicating infra-red light data conversion has overflowed
 '   Returns: TRUE (-1) if overflowed, FALSE (0) otherwise
     return ( readreg(core.RESPONSE) == core.ALS_IR_ADC_OVERFLOW )
 
 
-PUB ir_range(range): curr_rng
+PUB ir_range(range=-2): curr_rng
 ' Set measurement range of infra-red light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
@@ -332,7 +422,7 @@ PUB lux(): lx | vis, ir, lux1, lux2
     return (0 #> (lux1 - lux2))                 ' clamp to min of 0
 
 
-PUB opmode(mode): curr_mode
+PUB opmode(mode=-2): curr_mode
 ' Set operation mode
 '   Valid values:
 '       ONE_PS, ONE_ALS, ONE_PSALS: Force a single PS, ALS or PS+ALS measurement
@@ -358,6 +448,118 @@ PUB power_state(): s
     return readreg(core.CHIP_STAT)
 
 
+pub prox_adc_gain(g=-2): c
+' Set PS ADC gain factor
+'   g:  1..128, in powers of 2
+'   CAUTION: setting this value greater than 32 is not recommended without contacting
+'       Silicon Labs (reference datasheet rev 1.4, p.54, 'PS_ADC_GAIN @ 0x0B')
+    case g
+        1, 2, 4, 8, 16, 32, 64, 128:
+            g := (>|(g)-1)                        ' log2(g)
+            param_set(core.PS_ADC_GAIN, g)
+        other:
+            return |<( param_query(core.PS_ADC_GAIN) )
+
+
+PUB prox_adc_input(ch=1): m
+' Get currently set input for PS ADC channel
+'   ch:         channel (1..3; default: 1)
+'   Returns:    currently set ADC input/mode (see set_ps_adc_input() )
+    if ( (ch < 1) or (ch > 3) )
+        return -1                               ' invalid channel
+
+    return param_query(core.PS1_ADCMUX+(ch-1))
+
+
+pub prox_adc_measure_delay(d=-2): c
+' Set recovery period for ADC before taking PS measurement
+'   d:          ADC clocks (1, 7, 15, 31, 63, 127, 255, 511; default: 511)
+'   Returns:    current value if ct is out of range
+    case d
+        1, 7, 15, 31, 63, 127, 255, 511:
+            d := lookdownz(d: 1, 7, 15, 31, 63, 127, 255, 511) << core.PS_ADC_REC
+            param_set(core.PS_ADC_COUNTER, d)
+        other:
+            return (param_query(core.PS_ADC_COUNTER) >> core.PS_ADC_REC) & core.PS_ADC_REC_BITS
+
+
+CON
+
+    PS_ADC_RAW  = 0
+    PS_ADC_PROX = 1
+
+PUB prox_adc_mode(m=-2): c
+' Set proximity sensor ADC mode
+'   m:
+'       PS_ADC_RAW (0):     raw ADC measurement mode
+'       PS_ADC_PROX (1):    proximity measurement mode
+'   Returns:    currently set mode if m is out of range
+    c := param_query(core.PS_ADC_MISC)
+    case m
+        PS_ADC_RAW, PS_ADC_PROX:
+            m := (c & core.PS_ADC_MODE_MASK) | (m << core.PS_ADC_MODE)
+            param_set(core.PS_ADC_MISC, m)
+        other:
+            return ( (c >> core.PS_ADC_MODE) & 1)
+
+
+pub prox_adc_range(r=-2): c
+' Set proximity sensor ADC measurement range
+'   r:
+'       NORMAL ($00):   normal signal range
+'       HIGH ($20):     high signal range (gain is divided by 14.5)
+'   Returns:            current value if r is out of range
+    c := param_query(core.PS_ADC_MISC)
+    case r
+        NORMAL, HIGH:
+            r := (c & core.PS_RANGE_MASK) | r
+            param_set(core.PS_ADC_MISC, r)
+        other:
+            return (c >> core.PS_RANGE) & 1
+
+
+con
+
+    CH_PS1  = %001
+    CH_PS2  = %010
+    CH_PS3  = %100
+
+pub prox_chan_ena(ch=-2): c
+' Set proximity sensor channel mask
+'   ch:         channel bitmask
+'       b2..0:
+'           2: PS3
+'           1: PS2
+'           0: PS1
+'   Returns:    current bitmask if ch is out of range
+    c := param_query(core.CHLIST)
+    case ch
+        %000..%111:
+            ch := ((c & core.EN_PS_MASK) | ch)
+            param_set(core.CHLIST, ch)
+        other:
+            return (c & core.EN_PS_BITS)
+
+
+PUB prox_data = prox1_data
+PUB prox1_data(): p
+' Read PS1 ADC channel
+'   Returns: u16 ADC word
+    return readreg(core.PS1_DATA0, 2)
+
+
+PUB prox2_data(): p
+' Read PS2 ADC channel
+'   Returns: u16 ADC word
+    return readreg(core.PS2_DATA0, 2)
+
+
+PUB prox3_data(): p
+' Read PS3 ADC channel
+'   Returns: u16 ADC word
+    return readreg(core.PS3_DATA0, 2)
+
+
 PUB rd_cal_data()
 ' Read calibration data into 6-word array
     wordfill(@_cal_data, 0, 6)
@@ -378,7 +580,6 @@ PUB reset()
     time.msleep(10)
     writereg(core.HW_KEY, core.HW_KEY_EXPECTED)
     time.msleep(10)
-    opmode(ONE_PSALS)
     ir_bias(IR_DARK_DEF)
     white_bias(VIS_DARK_DEF)
 
@@ -402,6 +603,45 @@ PUB seq_id(): r
     return readreg(core.SEQ_ID)
 
 
+con
+
+    ' set_ps_adc_input() modes
+    ADC_SMALL_IR    = $00
+    ADC_VIS_PHOTO   = $02
+    ADC_LARGE_IR    = $03
+    ADC_NO_PHOTO    = $06
+    ADC_GND         = $25
+    ADC_TEMP        = $65
+    ADC_VDD         = $75
+
+PUB set_prox_adc_input(ch, i)
+' Select ADC input for PS channel
+'   ch:     channel (1..3)
+'   i:      input:
+'       ADC_SMALL_IR ($00):     small IR photodiode
+'       ADC_VIS_PHOTO ($02):    visible photodiode (subtract ADC_NO_PHOTO measurement from this
+'                               measurement
+'       ADC_LARGE_IR ($03):     large IR photodiode (default)
+'       ADC_NO_PHOTO ($06):     no photodiode (typically used as a reference for reading ambient
+'                               IR or visible light)
+'       ADC_GND ($25):          ground voltage (typically used as a reference for electrical
+'                               measurements)
+'       ADC_TEMP ($65):         temperature (relative measurements recommended; subtract ADC_GND
+'                               measurement from this reading
+'       ADC_VDD ($75):          Vdd voltage (a separate ADC_GND measurement should be done to use
+'                               as the reference
+'   NOTE: only inputs ADC_SMALL_IR and ADC_LARGE_IR are valid when using the proximity detection
+'       functionality
+    if ( (ch < 1) or (ch > 3) )
+        return                                  ' invalid channel
+
+    case i
+        ADC_SMALL_IR, ADC_VIS_PHOTO, ADC_LARGE_IR, ADC_NO_PHOTO, ADC_GND, ADC_TEMP, ADC_VDD:
+            param_set(core.PS1_ADCMUX+(ch-1), i)
+        other:
+            return                              ' invalid mode
+
+
 PUB sleeping(): flag
 ' Flag indicating device is sleeping
 '   Returns:    TRUE (-1) if device is in its lowest power state
@@ -416,7 +656,7 @@ PUB suspended(): flag
     return ( readreg(core.CHIP_STAT) == core.CHIP_STAT_SUSPEND )
 
 
-PUB uv_chan_ena(state): curr_state
+PUB uv_chan_ena(state=-2): curr_state
 ' Enable the UV index source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -451,7 +691,7 @@ PUB uv_data(): a
     return readreg(core.AUX_DATA0, 2)
 
 
-PUB white_bias(val): curr_val
+PUB white_bias(val=-2): curr_val
 ' Set white/visible sensor bias/dark value (ADC word)
 '   Valid values: 0..65535
 '   Any other value returns the current setting
@@ -461,7 +701,7 @@ PUB white_bias(val): curr_val
         return _vis_dark
 
 
-PUB white_chan_ena(state): curr_state
+PUB white_chan_ena(state=-2): curr_state
 ' Enable the white/visible ambient light source data channel
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -480,7 +720,7 @@ PUB white_data(): a
     return readreg(core.ALS_VIS_DATA0, 2)
 
 
-PUB white_gain(gain): curr_gain
+PUB white_gain(gain=-2): curr_gain
 ' Gain factor of white/visible light sensor
 '   Valid values: 1, 16, 64, 128
 '   Any other value polls the chip and returns the current setting
@@ -503,7 +743,7 @@ PUB white_overflow(): flag
     return ( readreg(core.RESPONSE) == core.ALS_VIS_ADC_OVERFLOW )
 
 
-PUB white_range(range): curr_rng
+PUB white_range(range=-2): curr_rng
 ' Set measurement range of white/visible light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
