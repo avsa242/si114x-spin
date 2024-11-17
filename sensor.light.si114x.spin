@@ -392,18 +392,18 @@ PUB ir_overflow(): f
     return ( readreg(core.RESPONSE) == core.ALS_IR_ADC_OVERFLOW )
 
 
-PUB ir_range(range=-2): curr_rng
+PUB ir_range(r=-2): c
 ' Set measurement range of infra-red light sensor
 '   Valid values:
 '       NORMAL ($00): Normal signal range/high sensitivity
 '       HIGH ($20): High signal range (gain divided by 14.5)
-    curr_rng := param_query(core.ALS_IR_ADC_MISC)
-    case range
+    c := param_query(core.ALS_IR_ADC_MISC)
+    case r
         NORMAL, HIGH:
-            range &= core.ALS_IR_ADC_MISC_MASK
-            param_set(core.ALS_IR_ADC_MISC, range)
+            r := (c & core.IR_RANGE_MASK) | r
+            param_set(core.ALS_IR_ADC_MISC, r)
         other:
-            return curr_rng
+            return c
 
 
 PUB lux(): lx | vis, ir, lux1, lux2

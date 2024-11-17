@@ -252,6 +252,8 @@ CON
     ALS_IR_ADC_MISC             = $1F
     ALS_IR_ADC_MISC_MASK        = $20
         IR_RANGE                = 5
+        IR_RANGE_MASK           = (1 << IR_RANGE) ^ ALS_IR_ADC_MISC_MASK
+
 
 PUB null()
 ' This is not a top-level object
