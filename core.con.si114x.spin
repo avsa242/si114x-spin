@@ -117,8 +117,8 @@ CON
     ANA_IN_KEY_3                = $3E
 
 ' COMMAND register values
-    CMD_PARAM_QUERY             = %100 << 5
-    CMD_PARAM_SET               = %101 << 5
+    CMD_PARAM_QUERY             = %100_00000
+    CMD_PARAM_SET               = %101_00000
     CMD_NOP                     = %000_00000
     CMD_RESET                   = %000_00001
     CMD_BUSADDR                 = %000_00010

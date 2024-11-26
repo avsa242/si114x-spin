@@ -4,7 +4,7 @@
     Description:    Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
     Author:         Jesse Burt
     Started:        Jun 1, 2019
-    Updated:        Nov 16, 2024
+    Updated:        Nov 26, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -157,7 +157,7 @@ PUB preset_uvi()
     ' These are the factory default part-to-part variance coefficients.
     ' They are restored by calling reset(), but show them here so the user
     '   doesn't have to look far for them.
-    'uv_set_coeffs($00_01_6B_7B)
+    uv_set_coeffs($00_01_6B_7B)
 
     aux_chan_ena(TRUE)
     uv_chan_ena(TRUE)
@@ -785,7 +785,7 @@ PRI param_query(p): v
     repeat
     until ( clr_resp() == core.NO_ERROR )
 
-    writereg(core.COMMAND, core.CMD_PARAM_QUERY)
+    writereg(core.COMMAND, core.CMD_PARAM_QUERY | p)
 
     repeat
         v := readreg(core.RESPONSE)
