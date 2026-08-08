@@ -4,8 +4,8 @@
     Description:    Driver for the Silicon Labs Si114[5|6|7] Proximity/UV/Amblient light sensor
     Author:         Jesse Burt
     Started:        Jun 1, 2019
-    Updated:        Nov 26, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Aug 8, 2026
+    Copyright (c) 2026 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -15,6 +15,8 @@ CON
     SCL             = 28
     SDA             = 29
     I2C_FREQ        = 100_000
+    SLAVE_ADDR      = $60
+
 
     { Chip status }
     SLEEP           = core.CHIP_STAT_SLEEP
@@ -63,6 +65,7 @@ VAR
     word _ir_dark, _vis_dark
     word _model
     byte _opmode
+    byte _slave_addr
 
 
 OBJ
@@ -84,18 +87,24 @@ PUB null()
 
 PUB start(): status
 ' Start using default I/O settings
-    return startx(SCL, SDA, I2C_FREQ)
+    return startx(SCL, SDA, I2C_FREQ, SLAVE_ADDR)
 
 
-PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ, SL_ADDR=0): status
 ' Start using custom I2C pins and bus frequency
     if ( lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) )
         if ( status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ) )
             time.usleep(core.T_POR)
+            _slave_addr := core.SLAVE_ADDR
+            if ( SL_ADDR )
+            ' if a slave address is specified, check to see if it already responds
+                if ( i2c.present(SL_ADDR << 1) )
+                    _slave_addr := SL_ADDR << 1
+                elseif ( i2c.present(SLAVE_WR) )
+                    set_slave_address(SL_ADDR)
             if ( lookdown(dev_id(): core.PART_ID_RESP_1145, ...
                                     core.PART_ID_RESP_1146, ...
                                     core.PART_ID_RESP_1147) )
-                reset()
                 return
     ' if this point is reached, something above failed
     ' Double check I/O pin assignments, connections, power
@@ -117,7 +126,6 @@ PUB defaults()
 
 PUB preset_als()
 ' Preset settings for ambient light sensing mode
-    reset()                                     ' start with POR defaults
     opmode(CONT_ALS)
     als_data_rate(32_000_000)
     aux_chan_ena(FALSE)
@@ -129,7 +137,6 @@ PUB preset_als()
 
 PUB preset_prox()
 ' Preset settings for proximity sensor mode
-    reset()
     uv_chan_ena(false)
     ir_chan_ena(true)
     white_chan_ena(false)
@@ -151,7 +158,6 @@ PUB preset_prox()
 
 PUB preset_uvi()
 ' Preset settings for measuring UV Index
-    reset()
     opmode(CONT_ALS)
     als_data_rate(32_000_000)
     ' These are the factory default part-to-part variance coefficients.
@@ -565,11 +571,11 @@ PUB rd_cal_data()
     wordfill(@_cal_data, 0, 6)
     command(core.CMD_GET_CAL)
     i2c.start()
-    i2c.write(SLAVE_WR)
+    i2c.write(_slave_addr)
     i2c.write(core.CAL_DATA)
 
     i2c.start()
-    i2c.write(SLAVE_RD)
+    i2c.write(_slave_addr | 1)
     i2c.rdblock_lsbf(@_cal_data, 12, i2c.NAK)
     i2c.stop()
 
@@ -582,6 +588,8 @@ PUB reset()
     time.msleep(10)
     ir_bias(IR_DARK_DEF)
     white_bias(VIS_DARK_DEF)
+    if ( _slave_addr )
+        set_slave_address(_slave_addr >> 1)
 
 
 PUB rev_id(): id
@@ -640,6 +648,19 @@ PUB set_prox_adc_input(ch, i)
             param_set(core.PS1_ADCMUX+(ch-1), i)
         other:
             return                              ' invalid mode
+
+
+PUB set_slave_address(a): s
+' Set new I2C slave address
+'   a: $08..$77
+'   other values ignored
+'   NOTE: The new address takes effect immediately
+    if ( (a => $08) and (a =< $77) )            ' valid addresses only
+        s := param_set(core.I2C_ADDR, a)        ' set new address (as old address)
+        time.msleep(10)
+        command(core.CMD_BUSADDR)
+        time.msleep(10)
+        _slave_addr := a << 1                   ' now remember it for future communication
 
 
 PUB sleeping(): flag
@@ -816,14 +837,14 @@ PRI readreg(reg_nr, len=1): v | cmd_pkt
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register
         $00..$04, $07..$09, $10, $13..$18, $20..$2E, $30:
-            cmd_pkt.byte[0] := SLAVE_WR
+            cmd_pkt.byte[0] := _slave_addr
             cmd_pkt.byte[1] := reg_nr
             v := 0
             i2c.start()
             i2c.wrblock_lsbf(@cmd_pkt, 2)
 
             i2c.start()
-            i2c.write(SLAVE_RD)
+            i2c.write(_slave_addr | 1)
             i2c.rdblock_lsbf(@v, len, i2c.NAK)
             i2c.stop()
         other:
@@ -834,7 +855,7 @@ PRI writereg(reg_nr, val, len=1) | cmd_pkt
 ' Write nr_bytes from ptr_buff to the device
     case reg_nr
         $03, $04, $07, $08, $09, $0F, $10, $13..$18, $20..$2E:
-            cmd_pkt.byte[0] := SLAVE_WR
+            cmd_pkt.byte[0] := _slave_addr
             cmd_pkt.byte[1] := reg_nr
 
             i2c.start()
@@ -847,7 +868,7 @@ PRI writereg(reg_nr, val, len=1) | cmd_pkt
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2026 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

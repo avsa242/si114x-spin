@@ -17,13 +17,15 @@ This is a P8X32A/Propeller driver object for the Silicon Labs Si114x (5, 6, 7) s
 * Set custom UV index calibration coefficients
 * Measure illuminance, in lux
 * Proximity sensing
+* Set custom slave address ($08..$77)
 
 
 ## Requirements
 
 P1/SPIN1:
 * spin-standard-library
-* 1 extra core/cog for the PASM I2C engine
+* 1 extra core/cog for the PASM I2C engine (none, if the bytecode-based engine is used)
+
 
 P2/SPIN2:
 * p2-spin-standard-library
@@ -33,10 +35,10 @@ P2/SPIN2:
 
 | Processor | Language | Compiler               | Backend      | Status                |
 |-----------|----------|------------------------|--------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (6.9.4)       | Bytecode     | OK                    |
-| P1        | SPIN1    | FlexSpin (6.9.4)       | Native/PASM  | OK                    |
-| P2        | SPIN2    | FlexSpin (6.9.4)       | NuCode       | OK                    |
-| P2        | SPIN2    | FlexSpin (6.9.4)       | Native/PASM2 | OK                    |
+| P1        | SPIN1    | FlexSpin (7.7.0)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (7.7.0)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (7.7.0)       | NuCode       | OK                    |
+| P2        | SPIN2    | FlexSpin (7.7.0)       | Native/PASM2 | OK                    |
 
 (other versions or toolchains not listed are __not supported__, and _may or may not_ work)
 
@@ -48,8 +50,6 @@ P2/SPIN2:
 
 ## Limitations
 
-* Very early in development - may malfunction, or outright fail to build
-* Doesn't support alternate slave address usage/programming
 * Doesn't support temp sensor/Vdd/Vss reading (not currently planned)
 * Measurement calibration/correction/calculation unverified
 * Silicon Labs has obsoleted the Si11xx series

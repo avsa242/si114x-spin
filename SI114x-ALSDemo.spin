@@ -19,14 +19,13 @@ CON
 OBJ
 
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
-    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000
+    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000, SLAVE_ADDR=$62
     time:   "time"
 
 
 PUB main()
 
     setup()
-
     sensor.preset_als()                         ' set up the sensor for ambient light sensing
 
     repeat
