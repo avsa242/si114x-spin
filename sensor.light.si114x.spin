@@ -219,9 +219,9 @@ PUB aux_chan_ena(state=-2): curr_state
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     curr_state := param_query(core.CHLIST)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := (curr_state & core.EN_AUX_MASK) | ( ||(state) << core.EN_AUX )
+            state := (curr_state & core.EN_AUX_MASK) | ( abs(state) << core.EN_AUX )
             param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_AUX) & 1) == 1)
@@ -290,9 +290,9 @@ PUB ir_chan_ena(state=-2): curr_state
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     curr_state := param_query(core.CHLIST)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := (curr_state & core.EN_ALS_IR_MASK) | ( ||(state) << core.EN_ALS_IR )
+            state := (curr_state & core.EN_ALS_IR_MASK) | ( abs(state) << core.EN_ALS_IR )
             param_set(core.CHLIST, state)
         other:
             return (((curr_state >> core.EN_ALS_IR) & 1) == 1)
@@ -682,9 +682,9 @@ PUB uv_chan_ena(state=-2): curr_state
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     curr_state := param_query(core.CHLIST)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := ||(state) << core.EN_UV
+            state := abs(state) << core.EN_UV
             state := ((curr_state & core.EN_UV_MASK) | state)
             param_set(core.CHLIST, state)
         other:
@@ -727,9 +727,9 @@ PUB white_chan_ena(state=-2): curr_state
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     curr_state := param_query(core.CHLIST)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := ||(state) << core.EN_ALS_VIS
+            state := abs(state) << core.EN_ALS_VIS
             state := ((curr_state & core.EN_ALS_VIS_MASK) | state)
             param_set(core.CHLIST, state)
         other:

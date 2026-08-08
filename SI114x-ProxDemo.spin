@@ -5,8 +5,8 @@
         * Proximity sensing
     Author:         Jesse Burt
     Started:        Feb 29, 2020
-    Updated:        Nov 17, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Aug 8, 2026
+    Copyright (c) 2026 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -19,7 +19,7 @@ CON
 OBJ
 
     ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
-    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000
+    sensor: "sensor.light.si114x" | SCL=28, SDA=29, I2C_FREQ=100_000, SLAVE_ADDR=$60
     time:   "time"
 
 
@@ -50,7 +50,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2026 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
